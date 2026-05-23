@@ -10,7 +10,7 @@ import trustscoreRouter from "./routes/trustscore.js";
 
 const PORT          = process.env.PORT || 3000;
 const PAY_TO        = process.env.PAY_TO_ADDRESS as `0x${string}`;
-const NETWORK       = process.env.NETWORK || "eip155:84532";        // Base Sepolia by default
+const NETWORK       = (process.env.NETWORK || "eip155:84532") as `${string}:${string}`;
 const FACILITATOR   = process.env.FACILITATOR_URL || "https://facilitator.x402.org";
 
 if (!PAY_TO || !PAY_TO.startsWith("0x")) {

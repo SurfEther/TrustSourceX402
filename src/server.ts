@@ -4,6 +4,7 @@ import cors from "cors";
 import { paymentMiddleware, x402ResourceServer } from "@x402/express";
 import { ExactEvmScheme } from "@x402/evm/exact/server";
 import { HTTPFacilitatorClient } from "@x402/core/server";
+import { createFacilitatorConfig } from "@coinbase/x402";
 import trustscoreRouter from "./routes/trustscore.js";
 
 // ─── Config ───────────────────────────────────────────────────────────────────
@@ -21,7 +22,16 @@ if (!PAY_TO || !PAY_TO.startsWith("0x")) {
 
 // ─── x402 Setup ───────────────────────────────────────────────────────────────
 
-const facilitatorClient = new HTTPFacilitatorClient({ url: FACILITATOR });
+const isMainnet = NETWORK === "eip155:8453";
+
+const facilitatorClient = isMainnet && process.env.CDP_API_KEY_ID
+  ? new HTTPFacilitatorClient(
+      createFacilitatorConfig(
+        process.env.CDP_API_KEY_ID,
+        process.env.CDP_API_KEY_SECRET!
+      )
+    )
+  : new HTTPFacilitatorClient({ url: FACILITATOR });
 
 const resourceServer = new x402ResourceServer(facilitatorClient)
   .register("eip155:*", new ExactEvmScheme());

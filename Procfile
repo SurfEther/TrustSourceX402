@@ -1,1 +1,1 @@
-web: npm run build && npm start
+echo "web: npm start"

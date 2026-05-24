@@ -62,8 +62,9 @@ const limiter = rateLimit({
 // ─── Free routes ─────────────────────────────────────────────────────────────
 
 app.get("/", (req, res) => {
-  if (req.accepts("html") && !req.accepts("json")) {
-    res.sendFile(path.join(__dirname, "..", "public", "index.html"));
+  const wantHtml = req.headers.accept?.includes("text/html") ?? false;
+  if (wantHtml) {
+    res.sendFile(path.resolve("public/index.html"));
     return;
   }
   res.json({
@@ -166,7 +167,7 @@ app.use((_req, res) => {
 app.listen(PORT, () => {
   console.log(`
 ╔══════════════════════════════════════════════════════╗
-║           AgentBrain API — Server Running            ║
+║           TrustSource API — Server Running            ║
 ╠══════════════════════════════════════════════════════╣
 ║  URL       : http://localhost:${PORT}                   ║
 ║  Network   : ${NETWORK} ${IS_MAINNET ? "(MAINNET 🟢)" : "(TESTNET ✓) "} ║

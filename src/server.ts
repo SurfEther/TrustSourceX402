@@ -9,6 +9,13 @@ import { createFacilitatorConfig } from "@coinbase/x402";
 import { declareDiscoveryExtension } from "@x402/extensions/bazaar";
 import trustscoreRouter from "./routes/trustscore.js";
 import openApiRouter from "./openapi.js";
+import path from "path";
+import { fileURLToPath } from "url";
+
+//  ─── Landing Page  ─────────────────────────────────────────────────────
+
+const __filename  = fileURLToPath(import.meta.url);
+const __dirname   = path.dirname(__filename);
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 
@@ -54,10 +61,14 @@ const limiter = rateLimit({
 
 // ─── Free routes ─────────────────────────────────────────────────────────────
 
-app.get("/", (_req, res) => {
+app.get("/", (req, res) => {
+  if (req.accepts("html") && !req.accepts("json")) {
+    res.sendFile(path.join(__dirname, "..", "public", "index.html"));
+    return;
+  }
   res.json({
-    name:        "AgentBrain API",
-    description: "x402-powered intelligence APIs for AI agents",
+    name:        "TrustSource API",
+    description: "Domain trust and safety scoring for AI agents — powered by x402",
     version:     "0.1.0",
     endpoints: {
       "GET /trustscore": {
@@ -76,7 +87,7 @@ app.get("/", (_req, res) => {
       payTo:       PAY_TO,
     },
     links: {
-      docs:   "https://trustsource.cc/docs",
+      docs:   "https://trustsource.cc/openapi.json",
       bazaar: "https://agentic.market",
     },
   });

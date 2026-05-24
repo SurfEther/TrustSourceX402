@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TrustSource — Domain Trust Scoring for AI Agents</title>
+  <meta name="description" content="Before your agent pays, know who it's paying. Domain trust scoring API for autonomous AI agents. Pay per query via x402. No API keys." />
+  <meta property="og:title" content="TrustSource — Domain Trust Scoring for AI Agents" />
+  <meta property="og:description" content="Before your agent pays, know who it's paying. $0.003 USDC per query via x402." />
+  <meta property="og:url" content="https://trustsource.cc" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@700;800&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:       #080808;
+      --bg2:      #0f0f0f;
+      --border:   #1e1e1e;
+      --text:     #f0f0f0;
+      --muted:    #555;
+      --dim:      #2a2a2a;
+      --accent:   #00e5a0;
+      --accent2:  #0066ff;
+      --mono:     'DM Mono', monospace;
+      --display:  'Syne', sans-serif;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--mono);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── Grid overlay ── */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(var(--border) 1px, transparent 1px),
+        linear-gradient(90deg, var(--border) 1px, transparent 1px);
+      background-size: 64px 64px;
+      opacity: 0.35;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ── Nav ── */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 40px;
+      background: rgba(8,8,8,0.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .nav-logo {
+      font-family: var(--display);
+      font-weight: 800;
+      font-size: 1.1rem;
+      letter-spacing: -0.02em;
+      color: var(--text);
+      text-decoration: none;
+    }
+
+    .nav-logo span { color: var(--accent); }
+
+    .nav-links {
+      display: flex;
+      gap: 32px;
+      list-style: none;
+    }
+
+    .nav-links a {
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 0.78rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      transition: color 0.2s;
+    }
+
+    .nav-links a:hover { color: var(--text); }
+
+    /* ── Hero ── */
+    .hero {
+      position: relative;
+      z-index: 1;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 120px 40px 80px;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    .hero-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.72rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 32px;
+      opacity: 0;
+      animation: fadeUp 0.6s 0.1s forwards;
+    }
+
+    .hero-tag::before {
+      content: '';
+      display: block;
+      width: 6px; height: 6px;
+      background: var(--accent);
+      border-radius: 50%;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50%       { opacity: 0.5; transform: scale(1.4); }
+    }
+
+    .hero h1 {
+      font-family: var(--display);
+      font-weight: 800;
+      font-size: clamp(3rem, 8vw, 7rem);
+      line-height: 0.95;
+      letter-spacing: -0.04em;
+      margin-bottom: 32px;
+      opacity: 0;
+      animation: fadeUp 0.6s 0.2s forwards;
+    }
+
+    .hero h1 em {
+      font-style: normal;
+      color: transparent;
+      -webkit-text-stroke: 1px var(--accent);
+    }
+
+    .hero-sub {
+      font-size: clamp(0.95rem, 2vw, 1.15rem);
+      color: var(--muted);
+      max-width: 520px;
+      line-height: 1.7;
+      margin-bottom: 52px;
+      opacity: 0;
+      animation: fadeUp 0.6s 0.3s forwards;
+    }
+
+    .hero-actions {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      flex-wrap: wrap;
+      opacity: 0;
+      animation: fadeUp 0.6s 0.4s forwards;
+    }
+
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 14px 28px;
+      background: var(--accent);
+      color: #000;
+      font-family: var(--mono);
+      font-weight: 500;
+      font-size: 0.85rem;
+      letter-spacing: 0.04em;
+      text-decoration: none;
+      border: none;
+      cursor: pointer;
+      transition: transform 0.15s, background 0.15s;
+      clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px));
+    }
+
+    .btn-primary:hover {
+      background: #00ffb3;
+      transform: translateY(-2px);
+    }
+
+    .btn-secondary {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 14px 24px;
+      background: transparent;
+      color: var(--muted);
+      font-family: var(--mono);
+      font-size: 0.82rem;
+      letter-spacing: 0.04em;
+      text-decoration: none;
+      border: 1px solid var(--border);
+      transition: color 0.2s, border-color 0.2s;
+    }
+
+    .btn-secondary:hover {
+      color: var(--text);
+      border-color: var(--muted);
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── Stats bar ── */
+    .stats {
+      position: relative;
+      z-index: 1;
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    .stat {
+      padding: 36px 40px;
+      border-right: 1px solid var(--border);
+    }
+
+    .stat:last-child { border-right: none; }
+
+    .stat-value {
+      font-family: var(--display);
+      font-size: 2.4rem;
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      color: var(--text);
+      margin-bottom: 4px;
+    }
+
+    .stat-value span { color: var(--accent); }
+
+    .stat-label {
+      font-size: 0.72rem;
+      color: var(--muted);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    /* ── Signals ── */
+    .section {
+      position: relative;
+      z-index: 1;
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 96px 40px;
+    }
+
+    .section-label {
+      font-size: 0.7rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 48px;
+    }
+
+    .signals {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1px;
+      background: var(--border);
+      border: 1px solid var(--border);
+    }
+
+    .signal {
+      background: var(--bg);
+      padding: 36px;
+      transition: background 0.2s;
+    }
+
+    .signal:hover { background: var(--bg2); }
+
+    .signal-header {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+
+    .signal-name {
+      font-family: var(--display);
+      font-size: 1.1rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    .signal-pts {
+      font-size: 0.7rem;
+      color: var(--accent);
+      letter-spacing: 0.08em;
+    }
+
+    .signal-desc {
+      font-size: 0.8rem;
+      color: var(--muted);
+      line-height: 1.65;
+    }
+
+    /* ── Response block ── */
+    .response-section {
+      position: relative;
+      z-index: 1;
+      border-top: 1px solid var(--border);
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 96px 40px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 80px;
+      align-items: start;
+    }
+
+    .response-text h2 {
+      font-family: var(--display);
+      font-size: clamp(1.8rem, 3vw, 2.6rem);
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      line-height: 1.1;
+      margin-bottom: 20px;
+    }
+
+    .response-text p {
+      font-size: 0.85rem;
+      color: var(--muted);
+      line-height: 1.8;
+      margin-bottom: 32px;
+    }
+
+    .tiers {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .tier {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 0.78rem;
+    }
+
+    .tier-badge {
+      font-family: var(--mono);
+      font-size: 0.65rem;
+      font-weight: 500;
+      padding: 3px 8px;
+      letter-spacing: 0.08em;
+      min-width: 90px;
+      text-align: center;
+    }
+
+    .tier-trusted   { background: rgba(0,229,160,0.15); color: #00e5a0; border: 1px solid rgba(0,229,160,0.3); }
+    .tier-moderate  { background: rgba(255,200,0,0.1);  color: #ffc800; border: 1px solid rgba(255,200,0,0.2); }
+    .tier-caution   { background: rgba(255,120,0,0.1);  color: #ff7800; border: 1px solid rgba(255,120,0,0.2); }
+    .tier-high-risk { background: rgba(255,60,60,0.1);  color: #ff3c3c; border: 1px solid rgba(255,60,60,0.2); }
+
+    .tier-range { color: var(--muted); font-size: 0.72rem; }
+
+    .code-block {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      padding: 28px;
+      font-family: var(--mono);
+      font-size: 0.75rem;
+      line-height: 1.8;
+      overflow-x: auto;
+      position: relative;
+    }
+
+    .code-block::before {
+      content: 'RESPONSE';
+      position: absolute;
+      top: 12px; right: 16px;
+      font-size: 0.6rem;
+      letter-spacing: 0.12em;
+      color: var(--muted);
+    }
+
+    .c-key   { color: #888; }
+    .c-str   { color: #a8d8a8; }
+    .c-num   { color: var(--accent); }
+    .c-tier  { color: #ffd580; }
+    .c-meta  { color: #7eb8f7; }
+
+    /* ── Pricing ── */
+    .pricing-section {
+      position: relative;
+      z-index: 1;
+      border-top: 1px solid var(--border);
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 96px 40px;
+    }
+
+    .pricing-card {
+      border: 1px solid var(--border);
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+    }
+
+    .pricing-item {
+      padding: 40px;
+      border-right: 1px solid var(--border);
+    }
+
+    .pricing-item:last-child { border-right: none; }
+
+    .pricing-item-label {
+      font-size: 0.68rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 12px;
+    }
+
+    .pricing-item-value {
+      font-family: var(--display);
+      font-size: 1.9rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+    }
+
+    .pricing-item-value span {
+      font-size: 0.85rem;
+      color: var(--muted);
+      font-weight: 400;
+      letter-spacing: 0;
+    }
+
+    /* ── CTA ── */
+    .cta-section {
+      position: relative;
+      z-index: 1;
+      border-top: 1px solid var(--border);
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 96px 40px;
+      text-align: center;
+    }
+
+    .cta-section h2 {
+      font-family: var(--display);
+      font-size: clamp(2rem, 5vw, 4rem);
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      line-height: 1.05;
+      margin-bottom: 16px;
+    }
+
+    .cta-section p {
+      color: var(--muted);
+      font-size: 0.85rem;
+      margin-bottom: 48px;
+    }
+
+    .cta-actions {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+
+    /* ── Footer ── */
+    footer {
+      position: relative;
+      z-index: 1;
+      border-top: 1px solid var(--border);
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 32px 40px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .footer-logo {
+      font-family: var(--display);
+      font-size: 0.9rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      color: var(--muted);
+      text-decoration: none;
+    }
+
+    .footer-logo span { color: var(--accent); }
+
+    .footer-links {
+      display: flex;
+      gap: 24px;
+      list-style: none;
+    }
+
+    .footer-links a {
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 0.75rem;
+      letter-spacing: 0.06em;
+      transition: color 0.2s;
+    }
+
+    .footer-links a:hover { color: var(--text); }
+
+    @media (max-width: 768px) {
+      nav { padding: 16px 20px; }
+      .nav-links { display: none; }
+      .hero { padding: 100px 20px 60px; }
+      .stats { grid-template-columns: 1fr; }
+      .stat { border-right: none; border-bottom: 1px solid var(--border); }
+      .signals { grid-template-columns: 1fr; }
+      .response-section { grid-template-columns: 1fr; gap: 40px; padding: 60px 20px; }
+      .pricing-card { grid-template-columns: 1fr; }
+      .pricing-item { border-right: none; border-bottom: 1px solid var(--border); }
+      .section { padding: 60px 20px; }
+      .pricing-section, .cta-section { padding: 60px 20px; }
+      footer { flex-direction: column; gap: 20px; padding: 24px 20px; }
+    }
+  </style>
+</head>
+<body>
+
+  <nav>
+    <a href="/" class="nav-logo">Trust<span>Source</span></a>
+    <ul class="nav-links">
+      <li><a href="#signals">Signals</a></li>
+      <li><a href="#response">Response</a></li>
+      <li><a href="/openapi.json" target="_blank">API Spec</a></li>
+      <li><a href="mailto:hello@trustsource.cc">Contact</a></li>
+    </ul>
+  </nav>
+
+  <!-- ── Hero ── -->
+  <section class="hero">
+    <div class="hero-tag">x402 · Base Mainnet · Live</div>
+    <h1>Know who<br/>your agent<br/>is <em>paying.</em></h1>
+    <p class="hero-sub">
+      Domain trust scoring for autonomous AI agents.
+      Before your agent transacts, get a structured trust score —
+      domain age, TLD risk, DNS presence, registrar reputation.
+      No API key. Pay per query.
+    </p>
+    <div class="hero-actions">
+      <a href="https://agentic.market" target="_blank" class="btn-primary">
+        View on Agentic.Market
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+          <path d="M3 11L11 3M11 3H5M11 3V9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+      </a>
+      <a href="/openapi.json" target="_blank" class="btn-secondary">
+        API Spec
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+          <path d="M2 10L10 2M10 2H5M10 2V7" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+        </svg>
+      </a>
+    </div>
+  </section>
+
+  <!-- ── Stats ── -->
+  <div class="stats">
+    <div class="stat">
+      <div class="stat-value"><span>$</span>0.003</div>
+      <div class="stat-label">USDC per query</div>
+    </div>
+    <div class="stat">
+      <div class="stat-value">1<span>hr</span></div>
+      <div class="stat-label">Result cache TTL</div>
+    </div>
+    <div class="stat">
+      <div class="stat-value">0–<span>100</span></div>
+      <div class="stat-label">Trust score range</div>
+    </div>
+  </div>
+
+  <!-- ── Signals ── -->
+  <section class="section" id="signals">
+    <div class="section-label">// Scoring signals</div>
+    <div class="signals">
+      <div class="signal">
+        <div class="signal-header">
+          <span class="signal-name">Domain Age</span>
+          <span class="signal-pts">0 – 30 pts</span>
+        </div>
+        <p class="signal-desc">
+          WHOIS creation date. Domains registered years ago signal
+          operational permanence. A domain created last week scores
+          near zero regardless of other factors.
+        </p>
+      </div>
+      <div class="signal">
+        <div class="signal-header">
+          <span class="signal-name">TLD Risk</span>
+          <span class="signal-pts">0 – 20 pts</span>
+        </div>
+        <p class="signal-desc">
+          .com / .org / .io / .ai / .dev score highest. Known high-risk
+          TLDs (.tk, .xyz, .click, .ga) score zero — they're
+          disproportionately used in fraud and phishing.
+        </p>
+      </div>
+      <div class="signal">
+        <div class="signal-header">
+          <span class="signal-name">DNS Presence</span>
+          <span class="signal-pts">0 – 30 pts</span>
+        </div>
+        <p class="signal-desc">
+          Does the domain actually resolve? An A record confirms
+          something is running. MX records confirm a real operational
+          presence with email infrastructure.
+        </p>
+      </div>
+      <div class="signal">
+        <div class="signal-header">
+          <span class="signal-name">Registrar</span>
+          <span class="signal-pts">10 – 20 pts</span>
+        </div>
+        <p class="signal-desc">
+          Known established registrars (GoDaddy, Cloudflare, MarkMonitor,
+          Google, Namecheap, CSC) signal legitimate intent. Unknown or
+          obscure registrars score lower.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Response ── -->
+  <section class="response-section" id="response">
+    <div class="response-text">
+      <div class="section-label">// Response structure</div>
+      <h2>Structured.<br/>Actionable.</h2>
+      <p>
+        Every response includes the score, breakdown by signal,
+        raw WHOIS and DNS details, and a risk tier your agent
+        can act on directly.
+      </p>
+      <div class="tiers">
+        <div class="tier">
+          <span class="tier-badge tier-trusted">TRUSTED</span>
+          <span class="tier-range">75 – 100</span>
+        </div>
+        <div class="tier">
+          <span class="tier-badge tier-moderate">MODERATE</span>
+          <span class="tier-range">50 – 74</span>
+        </div>
+        <div class="tier">
+          <span class="tier-badge tier-caution">CAUTION</span>
+          <span class="tier-range">25 – 49</span>
+        </div>
+        <div class="tier">
+          <span class="tier-badge tier-high-risk">HIGH_RISK</span>
+          <span class="tier-range">0 – 24</span>
+        </div>
+      </div>
+    </div>
+    <div class="code-block">
+<span class="c-key">{</span>
+  <span class="c-key">"domain":</span>     <span class="c-str">"example.com"</span><span class="c-key">,</span>
+  <span class="c-key">"score":</span>      <span class="c-num">83</span><span class="c-key">,</span>
+  <span class="c-key">"maxScore":</span>   <span class="c-num">100</span><span class="c-key">,</span>
+  <span class="c-key">"tier":</span>       <span class="c-tier">"TRUSTED"</span><span class="c-key">,</span>
+
+  <span class="c-key">"breakdown":</span> <span class="c-key">{</span>
+    <span class="c-key">"domainAge":</span>   <span class="c-num">25</span><span class="c-key">,</span>
+    <span class="c-key">"tld":</span>         <span class="c-num">20</span><span class="c-key">,</span>
+    <span class="c-key">"dnsPresence":</span> <span class="c-num">28</span><span class="c-key">,</span>
+    <span class="c-key">"registrar":</span>   <span class="c-num">10</span>
+  <span class="c-key">},</span>
+
+  <span class="c-key">"details":</span> <span class="c-key">{</span>
+    <span class="c-key">"age":</span> <span class="c-key">{</span>
+      <span class="c-key">"days":</span>    <span class="c-num">4821</span><span class="c-key">,</span>
+      <span class="c-key">"label":</span>   <span class="c-str">"mature (2–5 years)"</span><span class="c-key">,</span>
+      <span class="c-key">"created":</span> <span class="c-str">"2013-02-09T..."</span>
+    <span class="c-key">},</span>
+    <span class="c-key">"tld":</span>       <span class="c-str">".com"</span><span class="c-key">,</span>
+    <span class="c-key">"dns":</span> <span class="c-key">{</span>
+      <span class="c-key">"hasARecord":</span>  <span class="c-num">true</span><span class="c-key">,</span>
+      <span class="c-key">"hasMxRecord":</span> <span class="c-num">true</span>
+    <span class="c-key">},</span>
+    <span class="c-key">"registrar":</span> <span class="c-str">"godaddy"</span>
+  <span class="c-key">},</span>
+
+  <span class="c-key">"meta":</span> <span class="c-key">{</span>
+    <span class="c-key">"paidWith":</span>  <span class="c-meta">"x402/USDC"</span><span class="c-key">,</span>
+    <span class="c-key">"cached":</span>    <span class="c-num">false</span>
+  <span class="c-key">}</span>
+<span class="c-key">}</span>
+    </div>
+  </section>
+
+  <!-- ── Pricing ── -->
+  <section class="pricing-section">
+    <div class="section-label">// Pricing</div>
+    <div class="pricing-card">
+      <div class="pricing-item">
+        <div class="pricing-item-label">Per query</div>
+        <div class="pricing-item-value">$0.003 <span>USDC</span></div>
+      </div>
+      <div class="pricing-item">
+        <div class="pricing-item-label">Protocol</div>
+        <div class="pricing-item-value">x402 <span>/ Base</span></div>
+      </div>
+      <div class="pricing-item">
+        <div class="pricing-item-label">API key required</div>
+        <div class="pricing-item-value" style="color: var(--accent);">None</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── CTA ── -->
+  <section class="cta-section">
+    <h2>Ready when<br/>your agent is.</h2>
+    <p>No signup. No API key. Discover and integrate via Agentic.Market.</p>
+    <div class="cta-actions">
+      <a href="https://agentic.market" target="_blank" class="btn-primary">
+        View on Agentic.Market
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+          <path d="M3 11L11 3M11 3H5M11 3V9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+      </a>
+      <a href="/openapi.json" target="_blank" class="btn-secondary">OpenAPI Spec</a>
+      <a href="mailto:hello@trustsource.cc" class="btn-secondary">hello@trustsource.cc</a>
+    </div>
+  </section>
+
+  <!-- ── Footer ── -->
+  <footer>
+    <a href="/" class="footer-logo">Trust<span>Source</span></a>
+    <ul class="footer-links">
+      <li><a href="/openapi.json" target="_blank">API Spec</a></li>
+      <li><a href="https://agentic.market" target="_blank">Agentic.Market</a></li>
+      <li><a href="https://x402.org" target="_blank">x402 Protocol</a></li>
+      <li><a href="mailto:hello@trustsource.cc">Contact</a></li>
+    </ul>
+  </footer>
+
+</body>
+</html>

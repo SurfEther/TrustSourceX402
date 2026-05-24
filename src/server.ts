@@ -1,18 +1,22 @@
 import "dotenv/config";
 import express from "express";
 import cors from "cors";
+import rateLimit from "express-rate-limit";
 import { paymentMiddleware, x402ResourceServer } from "@x402/express";
 import { ExactEvmScheme } from "@x402/evm/exact/server";
 import { HTTPFacilitatorClient } from "@x402/core/server";
 import { createFacilitatorConfig } from "@coinbase/x402";
+import { declareDiscoveryExtension } from "@x402/extensions/bazaar";
 import trustscoreRouter from "./routes/trustscore.js";
+import openApiRouter from "./openapi.js";
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 
-const PORT          = process.env.PORT || 3000;
-const PAY_TO        = process.env.PAY_TO_ADDRESS as `0x${string}`;
-const NETWORK       = (process.env.NETWORK || "eip155:84532") as `${string}:${string}`;
-const FACILITATOR   = process.env.FACILITATOR_URL || "https://facilitator.x402.org";
+const PORT        = process.env.PORT || 3000;
+const PAY_TO      = process.env.PAY_TO_ADDRESS as `0x${string}`;
+const NETWORK     = (process.env.NETWORK || "eip155:84532") as `${string}:${string}`;
+const FACILITATOR = process.env.FACILITATOR_URL || "https://x402.org/facilitator";
+const IS_MAINNET  = NETWORK === "eip155:8453";
 
 if (!PAY_TO || !PAY_TO.startsWith("0x")) {
   console.error("❌  PAY_TO_ADDRESS is missing or invalid in .env");
@@ -22,9 +26,7 @@ if (!PAY_TO || !PAY_TO.startsWith("0x")) {
 
 // ─── x402 Setup ───────────────────────────────────────────────────────────────
 
-const isMainnet = NETWORK === "eip155:8453";
-
-const facilitatorClient = isMainnet && process.env.CDP_API_KEY_ID
+const facilitatorClient = IS_MAINNET && process.env.CDP_API_KEY_ID
   ? new HTTPFacilitatorClient(
       createFacilitatorConfig(
         process.env.CDP_API_KEY_ID,
@@ -34,7 +36,7 @@ const facilitatorClient = isMainnet && process.env.CDP_API_KEY_ID
   : new HTTPFacilitatorClient({ url: FACILITATOR });
 
 const resourceServer = new x402ResourceServer(facilitatorClient)
-  .register("eip155:*", new ExactEvmScheme());
+  .register(NETWORK, new ExactEvmScheme());
 
 // ─── App ──────────────────────────────────────────────────────────────────────
 
@@ -42,7 +44,15 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// ─── Free routes (no payment required) ───────────────────────────────────────
+// Rate limiter — max 60 paid requests/min per IP
+const limiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 60,
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// ─── Free routes ─────────────────────────────────────────────────────────────
 
 app.get("/", (_req, res) => {
   res.json({
@@ -66,9 +76,8 @@ app.get("/", (_req, res) => {
       payTo:       PAY_TO,
     },
     links: {
-      docs:    "https://agentbrain.io/docs",
-      status:  "https://agentbrain.io/status",
-      bazaar:  "https://agentic.market",
+      docs:   "https://trustsource.cc/docs",
+      bazaar: "https://agentic.market",
     },
   });
 });
@@ -77,23 +86,53 @@ app.get("/health", (_req, res) => {
   res.json({ status: "ok", timestamp: new Date().toISOString() });
 });
 
-// ─── x402 Paywall middleware ───────────────────────────────────────────────────
-// This intercepts requests to the routes below.
-// If no payment header → returns HTTP 402 with price + wallet address.
-// Agent pays USDC → retries request with proof → gets response.
+app.use(openApiRouter);
+
+// ─── x402 Paywall ─────────────────────────────────────────────────────────────
 
 app.use(
   paymentMiddleware(
     {
       "GET /trustscore": {
-        accepts: {
-          scheme:  "exact",
-          price:   "$0.003",   // 0.003 USDC per lookup (~$0.003)
-          network: NETWORK,
-          payTo:   PAY_TO,
+        accepts: [
+          {
+            scheme:  "exact",
+            price:   "$0.003",
+            network: NETWORK,
+            payTo:   PAY_TO,
+          },
+        ],
+        description: "Domain trust and safety scoring — returns a 0–100 trust score, tier (TRUSTED/MODERATE/CAUTION/HIGH_RISK), domain age, DNS records, and registrar data as structured JSON. Designed for AI agents verifying URLs before transacting.",
+        mimeType: "application/json",
+        extensions: {
+          ...declareDiscoveryExtension({
+            input: { domain: "google.com" },
+            inputSchema: {
+              properties: {
+                domain: {
+                  type:        "string",
+                  description: "Domain name or full URL to score (e.g. example.com or https://example.com/path)",
+                },
+              },
+              required: ["domain"],
+            },
+            output: {
+              example: {
+                domain:    "google.com",
+                score:     90,
+                maxScore:  100,
+                tier:      "TRUSTED",
+                breakdown: { domainAge: 30, tld: 20, dnsPresence: 30, registrar: 10 },
+                details: {
+                  age:       { days: 10477, label: "established (5+ years)" },
+                  tld:       ".com",
+                  dns:       { hasARecord: true, hasMxRecord: true },
+                  registrar: "MarkMonitor, Inc.",
+                },
+              },
+            },
+          }),
         },
-        description: "Domain trust and safety score — returns score 0–100, tier, age, DNS, registrar data as JSON",
-        mimeType:    "application/json",
       },
     },
     resourceServer,
@@ -102,9 +141,10 @@ app.use(
 
 // ─── Paid routes ──────────────────────────────────────────────────────────────
 
+app.use(limiter);
 app.use(trustscoreRouter);
 
-// ─── 404 ──────────────────────────────────────────────────────────────────────
+// ─── 404 ─────────────────────────────────────────────────────────────────────
 
 app.use((_req, res) => {
   res.status(404).json({ error: "Not found" });
@@ -113,15 +153,14 @@ app.use((_req, res) => {
 // ─── Start ────────────────────────────────────────────────────────────────────
 
 app.listen(PORT, () => {
-  const isTestnet = NETWORK.includes("84532");
   console.log(`
 ╔══════════════════════════════════════════════════════╗
 ║           AgentBrain API — Server Running            ║
 ╠══════════════════════════════════════════════════════╣
 ║  URL       : http://localhost:${PORT}                   ║
-║  Network   : ${NETWORK} ${isTestnet ? "(TESTNET ✓)" : "(MAINNET)  "} ║
+║  Network   : ${NETWORK} ${IS_MAINNET ? "(MAINNET 🟢)" : "(TESTNET ✓) "} ║
 ║  Pay to    : ${PAY_TO.slice(0, 10)}...                       ║
-║  Facilitator: ${isTestnet ? "x402.org (public)" : "CDP (production)"}          ║
+║  Facilitator: ${IS_MAINNET ? "CDP (production) " : "x402.org (public) "}         ║
 ╠══════════════════════════════════════════════════════╣
 ║  Endpoints:                                          ║
 ║    GET /              → API info (free)              ║
@@ -129,9 +168,4 @@ app.listen(PORT, () => {
 ║    GET /trustscore    → Domain score (0.003 USDC)    ║
 ╚══════════════════════════════════════════════════════╝
   `);
-
-  if (isTestnet) {
-    console.log("⚠️  TESTNET MODE — No real USDC required.");
-    console.log("   Switch NETWORK=eip155:8453 and FACILITATOR_URL to CDP for production.\n");
-  }
 });

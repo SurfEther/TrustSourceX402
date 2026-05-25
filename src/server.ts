@@ -8,14 +8,15 @@ import { HTTPFacilitatorClient } from "@x402/core/server";
 import { createFacilitatorConfig } from "@coinbase/x402";
 import { declareDiscoveryExtension } from "@x402/extensions/bazaar";
 import trustscoreRouter from "./routes/trustscore.js";
-import openApiRouter from "./openapi.js";
+import sslcheckRouter   from "./routes/sslcheck.js";
+import openApiRouter    from "./openapi.js";
 import path from "path";
 import { fileURLToPath } from "url";
 
-//  ─── Landing Page  ─────────────────────────────────────────────────────
+// ─── Landing page path helpers ────────────────────────────────────────────────
 
-const __filename  = fileURLToPath(import.meta.url);
-const __dirname   = path.dirname(__filename);
+const __filename = fileURLToPath(import.meta.url);
+const __dirname  = path.dirname(__filename);
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 
@@ -69,8 +70,8 @@ app.get("/", (req, res) => {
   }
   res.json({
     name:        "TrustSource API",
-    description: "Domain trust and safety scoring for AI agents — powered by x402",
-    version:     "0.1.0",
+    description: "Domain trust and safety intelligence for AI agents — powered by x402",
+    version:     "0.2.0",
     endpoints: {
       "GET /trustscore": {
         description: "Domain trust and safety scoring — pay per lookup",
@@ -78,6 +79,13 @@ app.get("/", (req, res) => {
         network:     NETWORK,
         params:      { domain: "string (e.g. example.com or https://example.com)" },
         example:     "/trustscore?domain=example.com",
+      },
+      "GET /sslcheck": {
+        description: "SSL/TLS certificate intelligence — chain, expiry, crypto strength, trust scoring",
+        price:       "$0.002 USDC",
+        network:     NETWORK,
+        params:      { domain: "string (e.g. example.com or https://example.com)" },
+        example:     "/sslcheck?domain=example.com",
       },
     },
     payment: {
@@ -146,6 +154,49 @@ app.use(
           }),
         },
       },
+      "GET /sslcheck": {
+        accepts: [
+          {
+            scheme:  "exact",
+            price:   "$0.002",
+            network: NETWORK,
+            payTo:   PAY_TO,
+          },
+        ],
+        description: "SSL/TLS certificate intelligence — returns a 0–100 score, tier (VALID/WEAK/EXPIRING/EXPIRED/UNTRUSTED/INVALID), certificate chain details, issuer, expiry, signature algorithm, TLS protocol version, and security warnings. Designed for AI agents verifying domain security posture before transacting.",
+        mimeType: "application/json",
+        extensions: {
+          ...declareDiscoveryExtension({
+            input: { domain: "google.com" },
+            inputSchema: {
+              properties: {
+                domain: {
+                  type:        "string",
+                  description: "Domain name or full URL to check (e.g. example.com or https://example.com/path)",
+                },
+              },
+              required: ["domain"],
+            },
+            output: {
+              example: {
+                domain:    "google.com",
+                score:     100,
+                maxScore:  100,
+                tier:      "VALID",
+                breakdown: { chainValid: 30, trustedCa: 25, notExpired: 25, strongCrypto: 10, modernTls: 10 },
+                warnings:  [],
+                certificate: {
+                  issuer:        "Google Trust Services",
+                  daysRemaining: 67,
+                  isSelfSigned:  false,
+                },
+                chain:      { trusted: true, valid: true, depth: 3 },
+                connection: { protocol: "TLSv1.3" },
+              },
+            },
+          }),
+        },
+      },
     },
     resourceServer,
   )
@@ -155,6 +206,7 @@ app.use(
 
 app.use(limiter);
 app.use(trustscoreRouter);
+app.use(sslcheckRouter);
 
 // ─── 404 ─────────────────────────────────────────────────────────────────────
 
@@ -167,7 +219,7 @@ app.use((_req, res) => {
 app.listen(PORT, () => {
   console.log(`
 ╔══════════════════════════════════════════════════════╗
-║           TrustSource API — Server Running            ║
+║          TrustSource API — Server Running           ║
 ╠══════════════════════════════════════════════════════╣
 ║  URL       : http://localhost:${PORT}                   ║
 ║  Network   : ${NETWORK} ${IS_MAINNET ? "(MAINNET 🟢)" : "(TESTNET ✓) "} ║
@@ -175,9 +227,11 @@ app.listen(PORT, () => {
 ║  Facilitator: ${IS_MAINNET ? "CDP (production) " : "x402.org (public) "}         ║
 ╠══════════════════════════════════════════════════════╣
 ║  Endpoints:                                          ║
-║    GET /              → API info (free)              ║
+║    GET /              → Landing / API info (free)    ║
 ║    GET /health        → Health check (free)          ║
-║    GET /trustscore    → Domain score (0.003 USDC)    ║
+║    GET /openapi.json  → OpenAPI spec (free)          ║
+║    GET /trustscore    → Domain score   (0.003 USDC)  ║
+║    GET /sslcheck      → SSL/TLS check  (0.002 USDC)  ║
 ╚══════════════════════════════════════════════════════╝
   `);
 });

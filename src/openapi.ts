@@ -203,6 +203,61 @@ const spec = {
         },
       },
     },
+    "/sslcheck": {
+      get: {
+        operationId: "getSslCheck",
+        security:    [{ x402: [] }],
+        summary:     "SSL/TLS certificate intelligence",
+        description: [
+          "Returns a 0–100 SSL/TLS score for any domain.",
+          "Performs a live TLS handshake and analyzes the certificate chain,",
+          "expiry, signature algorithm, trust anchor, and protocol version.",
+          "",
+          "**Payment:** 0.002 USDC per call via x402 protocol (Base Mainnet).",
+          "",
+          "**Caching:** Results cached for 6 hours per domain (certificates change rarely).",
+        ].join("\n"),
+        tags: ["Trust"],
+        parameters: [
+          {
+            name:        "domain",
+            in:          "query",
+            description: "Domain name to check (e.g. example.com)",
+            required:    false,
+            schema:      { type: "string", maxLength: 253, example: "google.com" },
+          },
+          {
+            name:        "url",
+            in:          "query",
+            description: "Full URL — domain extracted automatically",
+            required:    false,
+            schema:      { type: "string", example: "https://example.com/page" },
+          },
+        ],
+        responses: {
+          "200": {
+            description: "SSL check completed",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/SslCheckResponse" },
+              },
+            },
+          },
+          "400": { description: "Invalid or missing domain parameter" },
+          "402": {
+            description: "Payment required — 0.002 USDC via x402",
+            headers: {
+              "PAYMENT-REQUIRED": {
+                description: "Base64-encoded JSON payment requirements",
+                schema:      { type: "string" },
+              },
+            },
+          },
+          "429": { description: "Rate limit exceeded" },
+          "502": { description: "TLS handshake failed (timeout, no cert, connection refused)" },
+        },
+      },
+    },
   },
   components: {
     schemas: {
@@ -260,6 +315,73 @@ const spec = {
               apiVersion: { type: "string", description: "API version", example: "1.0" },
               paidWith:   { type: "string", description: "Payment method", example: "x402/USDC" },
               cached:     { type: "boolean", description: "True if result was served from 1-hour cache", example: false },
+            },
+          },
+        },
+      },
+      SslCheckResponse: {
+        type:     "object",
+        required: ["domain", "score", "maxScore", "tier", "breakdown", "certificate", "chain", "connection", "meta"],
+        properties: {
+          domain:   { type: "string",  example: "google.com" },
+          score:    { type: "integer", example: 100 },
+          maxScore: { type: "integer", example: 100 },
+          tier: {
+            type: "string",
+            enum: ["VALID", "WEAK", "EXPIRING", "EXPIRED", "UNTRUSTED", "INVALID"],
+            description: "Risk tier based on certificate state and score",
+          },
+          breakdown: {
+            type: "object",
+            properties: {
+              chainValid:   { type: "integer", description: "Certificate chain validity (0–30)" },
+              trustedCa:    { type: "integer", description: "Trusted root CA (0–25)" },
+              notExpired:   { type: "integer", description: "Expiry margin (0–25)" },
+              strongCrypto: { type: "integer", description: "Signature strength (0–10)" },
+              modernTls:    { type: "integer", description: "TLS protocol version (0–10)" },
+            },
+          },
+          warnings: { type: "array", items: { type: "string" }, example: [] },
+          certificate: {
+            type: "object",
+            properties: {
+              subject:            { type: "string", example: "*.google.com" },
+              issuer:             { type: "string", example: "Google Trust Services" },
+              validFrom:          { type: "string", format: "date-time" },
+              validTo:            { type: "string", format: "date-time" },
+              daysRemaining:      { type: "integer", example: 67 },
+              signatureAlgorithm: { type: "string", example: "RSA-SHA256" },
+              san:                { type: "array", items: { type: "string" } },
+              fingerprint256:     { type: "string" },
+              serialNumber:       { type: "string" },
+              isSelfSigned:       { type: "boolean" },
+            },
+          },
+          chain: {
+            type: "object",
+            properties: {
+              depth:   { type: "integer", example: 3 },
+              valid:   { type: "boolean" },
+              trusted: { type: "boolean" },
+              rootCa:  { type: ["string", "null"] },
+            },
+          },
+          connection: {
+            type: "object",
+            properties: {
+              protocol:   { type: ["string", "null"], example: "TLSv1.3" },
+              cipher:     { type: ["object", "null"] },
+              authorized: { type: "boolean" },
+              authError:  { type: ["string", "null"] },
+            },
+          },
+          meta: {
+            type: "object",
+            properties: {
+              checkedAt:  { type: "string", format: "date-time" },
+              apiVersion: { type: "string" },
+              paidWith:   { type: "string", example: "x402/USDC" },
+              cached:     { type: "boolean" },
             },
           },
         },

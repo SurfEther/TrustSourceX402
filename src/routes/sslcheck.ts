@@ -4,12 +4,19 @@ import { X509Certificate } from "crypto";
 
 const router = Router();
 
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+// Normalize string-or-array fields from getPeerCertificate (Node types changed)
+function asString(v: string | string[] | undefined | null): string {
+  if (Array.isArray(v)) return v[0] || "";
+  return v || "";
+}
+
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const VALID_DOMAIN_RE = /^[a-zA-Z0-9][a-zA-Z0-9\-.]{1,251}[a-zA-Z0-9]$/;
 const PRIVATE_IP_RE   = /^(10\.|172\.(1[6-9]|2\d|3[01])\.|192\.168\.|127\.|0\.0\.0\.0)/;
 
-// Trusted root CAs by issuer organization name fragment
 const TRUSTED_CAS = [
   "let's encrypt", "digicert", "globalsign", "sectigo", "comodo",
   "godaddy", "amazon", "google trust", "cloudflare", "entrust",
@@ -17,7 +24,6 @@ const TRUSTED_CAS = [
   "identrust", "actalis", "zerossl",
 ];
 
-// Weak / deprecated signature algorithms
 const WEAK_SIGNATURES = ["md5", "sha1"];
 
 // ─── Cache ────────────────────────────────────────────────────────────────────
@@ -36,7 +42,6 @@ function getCached(key: string): Record<string, unknown> | null {
 }
 
 function setCached(key: string, data: Record<string, unknown>): void {
-  // 6 hour TTL — certs change rarely
   cache.set(key, { data, expiresAt: Date.now() + 6 * 60 * 60 * 1000 });
   if (cache.size > 1000) {
     const firstKey = cache.keys().next().value;
@@ -44,7 +49,7 @@ function setCached(key: string, data: Record<string, unknown>): void {
   }
 }
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+// ─── Domain extraction ────────────────────────────────────────────────────────
 
 function extractDomain(input: string): string | null {
   try {
@@ -58,6 +63,8 @@ function extractDomain(input: string): string | null {
     return null;
   }
 }
+
+// ─── TLS handshake ────────────────────────────────────────────────────────────
 
 interface CertInfo {
   subject:             string;
@@ -95,7 +102,7 @@ function fetchCertChain(domain: string, timeoutMs = 8000): Promise<TlsResult> {
       port:               443,
       servername:         domain,
       timeout:            timeoutMs,
-      rejectUnauthorized: false,        // we WANT to see invalid certs, not throw
+      rejectUnauthorized: false,
       ALPNProtocols:      ["http/1.1"],
     }, () => {
       try {
@@ -120,14 +127,17 @@ function fetchCertChain(domain: string, timeoutMs = 8000): Promise<TlsResult> {
           }
         }
 
-        const last      = chainCerts[chainCerts.length - 1];
-        const rootCa    = last?.issuer?.O || last?.issuer?.CN || null;
-        const trusted   = TRUSTED_CAS.some(ca =>
+        const last           = chainCerts[chainCerts.length - 1];
+        const rootCaIssuerO  = asString(last?.issuer?.O);
+        const rootCaIssuerCN = asString(last?.issuer?.CN);
+        const rootCa: string | null = rootCaIssuerO || rootCaIssuerCN || null;
+
+        const issuerOLower = asString(peerCert.issuer?.O).toLowerCase();
+        const trusted = TRUSTED_CAS.some(ca =>
           (rootCa?.toLowerCase().includes(ca) ?? false) ||
-          (peerCert.issuer?.O?.toLowerCase().includes(ca) ?? false)
+          issuerOLower.includes(ca)
         );
 
-        // Signature algorithm — extract from raw cert
         let signatureAlgorithm = "unknown";
         try {
           if (peerCert.raw) {
@@ -143,8 +153,8 @@ function fetchCertChain(domain: string, timeoutMs = 8000): Promise<TlsResult> {
         );
 
         const isSelfSigned =
-          peerCert.subject?.CN === peerCert.issuer?.CN &&
-          peerCert.subject?.O  === peerCert.issuer?.O;
+          asString(peerCert.subject?.CN) === asString(peerCert.issuer?.CN) &&
+          asString(peerCert.subject?.O)  === asString(peerCert.issuer?.O);
 
         const cipher  = socket.getCipher();
         const proto   = socket.getProtocol();
@@ -152,8 +162,8 @@ function fetchCertChain(domain: string, timeoutMs = 8000): Promise<TlsResult> {
 
         const result: TlsResult = {
           cert: {
-            subject:            peerCert.subject?.CN || peerCert.subject?.O || domain,
-            issuer:             peerCert.issuer?.O   || peerCert.issuer?.CN || "unknown",
+            subject:            asString(peerCert.subject?.CN) || asString(peerCert.subject?.O) || domain,
+            issuer:             asString(peerCert.issuer?.O)   || asString(peerCert.issuer?.CN) || "unknown",
             validFrom,
             validTo,
             daysRemaining:      days,
@@ -173,8 +183,8 @@ function fetchCertChain(domain: string, timeoutMs = 8000): Promise<TlsResult> {
             trusted: trusted && !isSelfSigned,
             rootCa,
           },
-          protocol: proto,
-          cipher:   cipher ? { name: cipher.name, version: cipher.version } : null,
+          protocol:   proto,
+          cipher:     cipher ? { name: cipher.name, version: cipher.version } : null,
           authorized: socket.authorized,
           authError:  authErr ? String(authErr) : null,
         };
@@ -203,15 +213,14 @@ interface Score {
 
 function scoreCertificate(result: TlsResult): Score {
   const breakdown: Record<string, number> = {
-    chainValid:   0,   // 0–30
-    trustedCa:    0,   // 0–25
-    notExpired:   0,   // 0–25
-    strongCrypto: 0,   // 0–10
-    modernTls:    0,   // 0–10
+    chainValid:   0,
+    trustedCa:    0,
+    notExpired:   0,
+    strongCrypto: 0,
+    modernTls:    0,
   };
   const warnings: string[] = [];
 
-  // Chain validity (0–30)
   if (result.chain.valid && result.authorized) {
     breakdown.chainValid = 30;
   } else if (result.chain.valid) {
@@ -222,7 +231,6 @@ function scoreCertificate(result: TlsResult): Score {
     if (result.authError) warnings.push(`auth_error:${result.authError}`);
   }
 
-  // Trusted CA (0–25)
   if (result.cert.isSelfSigned) {
     warnings.push("self_signed");
   } else if (result.chain.trusted) {
@@ -232,7 +240,6 @@ function scoreCertificate(result: TlsResult): Score {
     warnings.push("untrusted_ca");
   }
 
-  // Not expired (0–25)
   const days = result.cert.daysRemaining;
   if (days < 0) {
     warnings.push("expired");
@@ -246,7 +253,6 @@ function scoreCertificate(result: TlsResult): Score {
     breakdown.notExpired = 25;
   }
 
-  // Strong crypto (0–10)
   const sigLower = result.cert.signatureAlgorithm.toLowerCase();
   const weak     = WEAK_SIGNATURES.some(w => sigLower.includes(w));
   if (weak) {
@@ -257,7 +263,6 @@ function scoreCertificate(result: TlsResult): Score {
     breakdown.strongCrypto = 5;
   }
 
-  // Modern TLS (0–10)
   const proto = result.protocol || "";
   if (proto === "TLSv1.3") {
     breakdown.modernTls = 10;

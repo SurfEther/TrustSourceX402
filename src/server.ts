@@ -50,8 +50,6 @@ registerExactEvmScheme(resourceServer);
 // ─── App ──────────────────────────────────────────────────────────────────────
 
 const app = express();
-
-app.set("trust proxy", true);
 app.use(cors());
 app.use(express.json());
 
@@ -60,6 +58,12 @@ const limiter = rateLimit({
   max: 60,
   standardHeaders: true,
   legacyHeaders: false,
+  keyGenerator: (req) => {
+    return (req.headers["cf-connecting-ip"] as string) ||
+           (req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim() ||
+           req.ip ||
+           "unknown";
+  },
 });
 
 // ─── Free routes ─────────────────────────────────────────────────────────────

@@ -3,7 +3,7 @@ import express from "express";
 import cors from "cors";
 import rateLimit from "express-rate-limit";
 import { paymentMiddleware, x402ResourceServer } from "@x402/express";
-import { ExactEvmScheme } from "@x402/evm/exact/server";
+import { registerExactEvmScheme } from "@x402/evm/exact/server";
 import { HTTPFacilitatorClient } from "@x402/core/server";
 import { createFacilitatorConfig } from "@coinbase/x402";
 import { declareDiscoveryExtension } from "@x402/extensions/bazaar";
@@ -44,8 +44,8 @@ const facilitatorClient = IS_MAINNET && process.env.CDP_API_KEY_ID
     )
   : new HTTPFacilitatorClient({ url: FACILITATOR });
 
-const resourceServer = new x402ResourceServer(facilitatorClient)
-  .register(NETWORK, new ExactEvmScheme());
+const resourceServer = new x402ResourceServer(facilitatorClient);
+registerExactEvmScheme(resourceServer);
 
 // ─── App ──────────────────────────────────────────────────────────────────────
 

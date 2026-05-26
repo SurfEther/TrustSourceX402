@@ -12,7 +12,7 @@
     "@coinbase/x402": "^2.1.0",
     "@x402/core": "latest",
     "@x402/evm": "latest",
-    "@x402/express": "latest",
+    "@x402/express": "^2.13.0",
     "@x402/extensions": "latest",
     "@x402/fetch": "^2.13.0",
     "cors": "^2.8.5",

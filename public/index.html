@@ -3,10 +3,10 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>TrustSource — Domain Trust Scoring for AI Agents</title>
-  <meta name="description" content="Before your agent pays, know who it's paying. Domain trust scoring API for autonomous AI agents. Pay per query via x402. No API keys." />
-  <meta property="og:title" content="TrustSource — Domain Trust Scoring for AI Agents" />
-  <meta property="og:description" content="Before your agent pays, know who it's paying. $0.003 USDC per query via x402." />
+  <title>TrustSource — Verification Intelligence for AI Agents</title>
+  <meta name="description" content="Four x402-powered APIs for autonomous AI agents: domain trust scoring, SSL certificate intelligence, HTTP security header audit, and robots.txt + AI bot policy detection. No API keys. Pay per query." />
+  <meta property="og:title" content="TrustSource — Verification Intelligence for AI Agents" />
+  <meta property="og:description" content="Four x402-powered verification APIs. Pay per query via USDC. No API keys." />
   <meta property="og:url" content="https://trustsource.cc" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -73,15 +73,9 @@
       color: var(--text);
       text-decoration: none;
     }
-
     .nav-logo span { color: var(--accent); }
 
-    .nav-links {
-      display: flex;
-      gap: 32px;
-      list-style: none;
-    }
-
+    .nav-links { display: flex; gap: 32px; list-style: none; }
     .nav-links a {
       color: var(--muted);
       text-decoration: none;
@@ -90,7 +84,6 @@
       text-transform: uppercase;
       transition: color 0.2s;
     }
-
     .nav-links a:hover { color: var(--text); }
 
     /* ── Hero ── */
@@ -153,7 +146,7 @@
     .hero-sub {
       font-size: clamp(0.95rem, 2vw, 1.15rem);
       color: var(--muted);
-      max-width: 520px;
+      max-width: 580px;
       line-height: 1.7;
       margin-bottom: 52px;
       opacity: 0;
@@ -186,11 +179,7 @@
       transition: transform 0.15s, background 0.15s;
       clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px));
     }
-
-    .btn-primary:hover {
-      background: #00ffb3;
-      transform: translateY(-2px);
-    }
+    .btn-primary:hover { background: #00ffb3; transform: translateY(-2px); }
 
     .btn-secondary {
       display: inline-flex;
@@ -206,11 +195,7 @@
       border: 1px solid var(--border);
       transition: color 0.2s, border-color 0.2s;
     }
-
-    .btn-secondary:hover {
-      color: var(--text);
-      border-color: var(--muted);
-    }
+    .btn-secondary:hover { color: var(--text); border-color: var(--muted); }
 
     @keyframes fadeUp {
       from { opacity: 0; transform: translateY(16px); }
@@ -224,37 +209,34 @@
       border-top: 1px solid var(--border);
       border-bottom: 1px solid var(--border);
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
+      grid-template-columns: repeat(4, 1fr);
       max-width: 1100px;
       margin: 0 auto;
     }
 
     .stat {
-      padding: 36px 40px;
+      padding: 36px 32px;
       border-right: 1px solid var(--border);
     }
-
     .stat:last-child { border-right: none; }
 
     .stat-value {
       font-family: var(--display);
-      font-size: 2.4rem;
+      font-size: 2.2rem;
       font-weight: 800;
       letter-spacing: -0.04em;
       color: var(--text);
       margin-bottom: 4px;
     }
-
     .stat-value span { color: var(--accent); }
-
     .stat-label {
-      font-size: 0.72rem;
+      font-size: 0.68rem;
       color: var(--muted);
       letter-spacing: 0.08em;
       text-transform: uppercase;
     }
 
-    /* ── Signals ── */
+    /* ── Section headers ── */
     .section {
       position: relative;
       z-index: 1;
@@ -268,10 +250,28 @@
       letter-spacing: 0.14em;
       text-transform: uppercase;
       color: var(--accent);
+      margin-bottom: 32px;
+    }
+
+    .section-title {
+      font-family: var(--display);
+      font-size: clamp(1.8rem, 4vw, 3rem);
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      line-height: 1.05;
+      margin-bottom: 16px;
+    }
+
+    .section-intro {
+      color: var(--muted);
+      font-size: 0.92rem;
+      line-height: 1.7;
+      max-width: 620px;
       margin-bottom: 48px;
     }
 
-    .signals {
+    /* ── API overview cards ── */
+    .api-cards {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
       gap: 1px;
@@ -279,77 +279,136 @@
       border: 1px solid var(--border);
     }
 
-    .signal {
+    .api-card {
       background: var(--bg);
       padding: 36px;
       transition: background 0.2s;
+      text-decoration: none;
+      color: inherit;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      min-height: 220px;
     }
+    .api-card:hover { background: var(--bg2); }
 
-    .signal:hover { background: var(--bg2); }
-
-    .signal-header {
+    .api-card-header {
       display: flex;
       align-items: baseline;
       justify-content: space-between;
+      margin-bottom: 16px;
+    }
+
+    .api-card-route {
+      font-family: var(--mono);
+      font-size: 0.95rem;
+      color: var(--accent);
+      letter-spacing: -0.01em;
+    }
+
+    .api-card-price {
+      font-size: 0.7rem;
+      color: var(--muted);
+      letter-spacing: 0.06em;
+      font-family: var(--mono);
+    }
+
+    .api-card-title {
+      font-family: var(--display);
+      font-size: 1.5rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
       margin-bottom: 12px;
     }
 
-    .signal-name {
-      font-family: var(--display);
-      font-size: 1.1rem;
-      font-weight: 700;
-      letter-spacing: -0.02em;
-    }
-
-    .signal-pts {
-      font-size: 0.7rem;
-      color: var(--accent);
-      letter-spacing: 0.08em;
-    }
-
-    .signal-desc {
-      font-size: 0.8rem;
+    .api-card-desc {
+      font-size: 0.82rem;
       color: var(--muted);
       line-height: 1.65;
+      margin-bottom: 20px;
+      flex-grow: 1;
     }
 
-    /* ── Response block ── */
-    .response-section {
+    .api-card-link {
+      font-size: 0.7rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--accent);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* ── Per-API detail sections ── */
+    .api-section {
       position: relative;
       z-index: 1;
       border-top: 1px solid var(--border);
+      padding: 96px 40px;
+    }
+
+    .api-section-inner {
       max-width: 1100px;
       margin: 0 auto;
-      padding: 96px 40px;
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 80px;
       align-items: start;
     }
 
-    .response-text h2 {
-      font-family: var(--display);
-      font-size: clamp(1.8rem, 3vw, 2.6rem);
-      font-weight: 800;
-      letter-spacing: -0.04em;
-      line-height: 1.1;
-      margin-bottom: 20px;
+    .api-section-text { padding-top: 8px; }
+
+    .api-section-route {
+      font-family: var(--mono);
+      font-size: 0.85rem;
+      color: var(--accent);
+      margin-bottom: 12px;
+      letter-spacing: 0.02em;
     }
 
-    .response-text p {
-      font-size: 0.85rem;
+    .api-section-title {
+      font-family: var(--display);
+      font-size: clamp(1.6rem, 3vw, 2.4rem);
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      line-height: 1.05;
+      margin-bottom: 16px;
+    }
+
+    .api-section-desc {
+      font-size: 0.88rem;
       color: var(--muted);
-      line-height: 1.8;
+      line-height: 1.75;
       margin-bottom: 32px;
     }
 
-    .tiers {
+    .signal-list {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      margin-bottom: 32px;
+    }
+
+    .signal-row {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.82rem;
+    }
+    .signal-row:last-child { border-bottom: none; }
+
+    .signal-name { color: var(--text); }
+    .signal-pts { color: var(--accent); font-size: 0.72rem; letter-spacing: 0.06em; }
+
+    .tier-list {
       display: flex;
       flex-direction: column;
       gap: 8px;
     }
 
-    .tier {
+    .tier-row {
       display: flex;
       align-items: center;
       gap: 12px;
@@ -358,28 +417,29 @@
 
     .tier-badge {
       font-family: var(--mono);
-      font-size: 0.65rem;
+      font-size: 0.62rem;
       font-weight: 500;
       padding: 3px 8px;
       letter-spacing: 0.08em;
-      min-width: 90px;
+      min-width: 110px;
       text-align: center;
     }
 
-    .tier-trusted   { background: rgba(0,229,160,0.15); color: #00e5a0; border: 1px solid rgba(0,229,160,0.3); }
-    .tier-moderate  { background: rgba(255,200,0,0.1);  color: #ffc800; border: 1px solid rgba(255,200,0,0.2); }
-    .tier-caution   { background: rgba(255,120,0,0.1);  color: #ff7800; border: 1px solid rgba(255,120,0,0.2); }
-    .tier-high-risk { background: rgba(255,60,60,0.1);  color: #ff3c3c; border: 1px solid rgba(255,60,60,0.2); }
+    .tier-trusted, .tier-valid, .tier-open, .tier-a-plus { background: rgba(0,229,160,0.15); color: #00e5a0; border: 1px solid rgba(0,229,160,0.3); }
+    .tier-moderate, .tier-weak, .tier-selective, .tier-a { background: rgba(255,200,0,0.1); color: #ffc800; border: 1px solid rgba(255,200,0,0.2); }
+    .tier-caution, .tier-expiring, .tier-blocked-ai, .tier-b { background: rgba(255,120,0,0.1); color: #ff7800; border: 1px solid rgba(255,120,0,0.2); }
+    .tier-high-risk, .tier-expired, .tier-untrusted, .tier-invalid, .tier-blocked-all, .tier-f { background: rgba(255,60,60,0.1); color: #ff3c3c; border: 1px solid rgba(255,60,60,0.2); }
 
     .tier-range { color: var(--muted); font-size: 0.72rem; }
 
+    /* ── Code block ── */
     .code-block {
       background: var(--bg2);
       border: 1px solid var(--border);
-      padding: 28px;
+      padding: 24px;
       font-family: var(--mono);
-      font-size: 0.75rem;
-      line-height: 1.8;
+      font-size: 0.72rem;
+      line-height: 1.7;
       overflow-x: auto;
       position: relative;
     }
@@ -388,16 +448,16 @@
       content: 'RESPONSE';
       position: absolute;
       top: 12px; right: 16px;
-      font-size: 0.6rem;
+      font-size: 0.58rem;
       letter-spacing: 0.12em;
       color: var(--muted);
     }
 
-    .c-key   { color: #888; }
-    .c-str   { color: #a8d8a8; }
-    .c-num   { color: var(--accent); }
-    .c-tier  { color: #ffd580; }
-    .c-meta  { color: #7eb8f7; }
+    .c-key { color: #888; }
+    .c-str { color: #a8d8a8; }
+    .c-num { color: var(--accent); }
+    .c-tier { color: #ffd580; }
+    .c-meta { color: #7eb8f7; }
 
     /* ── Pricing ── */
     .pricing-section {
@@ -419,7 +479,6 @@
       padding: 40px;
       border-right: 1px solid var(--border);
     }
-
     .pricing-item:last-child { border-right: none; }
 
     .pricing-item-label {
@@ -432,13 +491,12 @@
 
     .pricing-item-value {
       font-family: var(--display);
-      font-size: 1.9rem;
+      font-size: 1.8rem;
       font-weight: 800;
       letter-spacing: -0.03em;
     }
-
     .pricing-item-value span {
-      font-size: 0.85rem;
+      font-size: 0.8rem;
       color: var(--muted);
       font-weight: 400;
       letter-spacing: 0;
@@ -499,15 +557,9 @@
       color: var(--muted);
       text-decoration: none;
     }
-
     .footer-logo span { color: var(--accent); }
 
-    .footer-links {
-      display: flex;
-      gap: 24px;
-      list-style: none;
-    }
-
+    .footer-links { display: flex; gap: 24px; list-style: none; }
     .footer-links a {
       color: var(--muted);
       text-decoration: none;
@@ -515,20 +567,21 @@
       letter-spacing: 0.06em;
       transition: color 0.2s;
     }
-
     .footer-links a:hover { color: var(--text); }
 
     @media (max-width: 768px) {
       nav { padding: 16px 20px; }
       .nav-links { display: none; }
       .hero { padding: 100px 20px 60px; }
-      .stats { grid-template-columns: 1fr; }
-      .stat { border-right: none; border-bottom: 1px solid var(--border); }
-      .signals { grid-template-columns: 1fr; }
-      .response-section { grid-template-columns: 1fr; gap: 40px; padding: 60px 20px; }
+      .stats { grid-template-columns: repeat(2, 1fr); }
+      .stat { border-right: 1px solid var(--border); }
+      .stat:nth-child(2n) { border-right: none; }
+      .stat:nth-child(1), .stat:nth-child(2) { border-bottom: 1px solid var(--border); }
+      .api-cards { grid-template-columns: 1fr; }
+      .api-section-inner { grid-template-columns: 1fr; gap: 40px; }
+      .api-section, .section { padding: 60px 20px; }
       .pricing-card { grid-template-columns: 1fr; }
       .pricing-item { border-right: none; border-bottom: 1px solid var(--border); }
-      .section { padding: 60px 20px; }
       .pricing-section, .cta-section { padding: 60px 20px; }
       footer { flex-direction: column; gap: 20px; padding: 24px 20px; }
     }
@@ -539,22 +592,24 @@
   <nav>
     <a href="/" class="nav-logo">Trust<span>Source</span></a>
     <ul class="nav-links">
-      <li><a href="#signals">Signals</a></li>
-      <li><a href="#response">Response</a></li>
-      <li><a href="/openapi.json" target="_blank">API Spec</a></li>
-      <li><a href="mailto:hello@trustsource.cc">Contact</a></li>
+      <li><a href="#apis">APIs</a></li>
+      <li><a href="#trustscore">TrustScore</a></li>
+      <li><a href="#sslcheck">SslCheck</a></li>
+      <li><a href="#headers">Headers</a></li>
+      <li><a href="#robots">Robots</a></li>
+      <li><a href="/openapi.json" target="_blank">Spec</a></li>
     </ul>
   </nav>
 
   <!-- ── Hero ── -->
   <section class="hero">
-    <div class="hero-tag">x402 · Base Mainnet · Live</div>
-    <h1>Know who<br/>your agent<br/>is <em>paying.</em></h1>
+    <div class="hero-tag">x402 · Base Mainnet · 4 endpoints live</div>
+    <h1>Verification<br/>intelligence<br/>for <em>agents.</em></h1>
     <p class="hero-sub">
-      Domain trust scoring for autonomous AI agents.
-      Before your agent transacts, get a structured trust score —
-      domain age, TLD risk, DNS presence, registrar reputation.
-      No API key. Pay per query.
+      Four x402-powered APIs that autonomous AI agents use before they transact.
+      Domain trust scoring. SSL certificate intelligence. HTTP security header audits.
+      Robots.txt and AI bot policy detection.
+      No API keys. Pay per query in USDC.
     </p>
     <div class="hero-actions">
       <a href="https://agentic.market" target="_blank" class="btn-primary">
@@ -563,158 +618,300 @@
           <path d="M3 11L11 3M11 3H5M11 3V9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
         </svg>
       </a>
-      <a href="/openapi.json" target="_blank" class="btn-secondary">
-        API Spec
-        <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-          <path d="M2 10L10 2M10 2H5M10 2V7" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
-        </svg>
-      </a>
+      <a href="#apis" class="btn-secondary">Explore APIs</a>
+      <a href="/openapi.json" target="_blank" class="btn-secondary">OpenAPI Spec</a>
     </div>
   </section>
 
   <!-- ── Stats ── -->
   <div class="stats">
     <div class="stat">
-      <div class="stat-value"><span>$</span>0.003</div>
+      <div class="stat-value"><span>4</span></div>
+      <div class="stat-label">Live APIs</div>
+    </div>
+    <div class="stat">
+      <div class="stat-value">$0.002<span>–.003</span></div>
       <div class="stat-label">USDC per query</div>
     </div>
     <div class="stat">
-      <div class="stat-value">1<span>hr</span></div>
-      <div class="stat-label">Result cache TTL</div>
+      <div class="stat-value">0<span>ms</span></div>
+      <div class="stat-label">API key setup</div>
     </div>
     <div class="stat">
-      <div class="stat-value">0–<span>100</span></div>
-      <div class="stat-label">Trust score range</div>
+      <div class="stat-value">1<span>–12h</span></div>
+      <div class="stat-label">Result cache</div>
     </div>
   </div>
 
-  <!-- ── Signals ── -->
-  <section class="section" id="signals">
-    <div class="section-label">// Scoring signals</div>
-    <div class="signals">
-      <div class="signal">
-        <div class="signal-header">
-          <span class="signal-name">Domain Age</span>
-          <span class="signal-pts">0 – 30 pts</span>
+  <!-- ── API overview cards ── -->
+  <section class="section" id="apis">
+    <div class="section-label">// Four endpoints</div>
+    <h2 class="section-title">Verify anything<br/>before you transact.</h2>
+    <p class="section-intro">
+      Each endpoint solves one specific verification need. They share a wallet, share an OpenAPI spec, and stack naturally — your agent can chain them together to get a complete picture of any target.
+    </p>
+    <div class="api-cards">
+      <a href="#trustscore" class="api-card">
+        <div>
+          <div class="api-card-header">
+            <span class="api-card-route">GET /trustscore</span>
+            <span class="api-card-price">$0.003 USDC</span>
+          </div>
+          <div class="api-card-title">TrustScore</div>
+          <div class="api-card-desc">
+            Domain trust scoring via WHOIS age, TLD risk, DNS presence, registrar reputation. Returns 0–100 score with TRUSTED/MODERATE/CAUTION/HIGH_RISK tier.
+          </div>
         </div>
-        <p class="signal-desc">
-          WHOIS creation date. Domains registered years ago signal
-          operational permanence. A domain created last week scores
-          near zero regardless of other factors.
+        <span class="api-card-link">Learn more →</span>
+      </a>
+
+      <a href="#sslcheck" class="api-card">
+        <div>
+          <div class="api-card-header">
+            <span class="api-card-route">GET /sslcheck</span>
+            <span class="api-card-price">$0.002 USDC</span>
+          </div>
+          <div class="api-card-title">SslCheck</div>
+          <div class="api-card-desc">
+            Live TLS handshake analysis — certificate chain, expiry, trusted CA detection, signature strength, TLS 1.2/1.3 protocol check. Returns 0–100 score plus warnings.
+          </div>
+        </div>
+        <span class="api-card-link">Learn more →</span>
+      </a>
+
+      <a href="#headers" class="api-card">
+        <div>
+          <div class="api-card-header">
+            <span class="api-card-route">GET /headers</span>
+            <span class="api-card-price">$0.003 USDC</span>
+          </div>
+          <div class="api-card-title">Headers</div>
+          <div class="api-card-desc">
+            HTTP security header audit — HSTS, CSP, X-Frame-Options, Referrer-Policy, COOP, server disclosure. Returns A+ to F letter grade with structured analysis.
+          </div>
+        </div>
+        <span class="api-card-link">Learn more →</span>
+      </a>
+
+      <a href="#robots" class="api-card">
+        <div>
+          <div class="api-card-header">
+            <span class="api-card-route">GET /robots</span>
+            <span class="api-card-price">$0.002 USDC</span>
+          </div>
+          <div class="api-card-title">Robots</div>
+          <div class="api-card-desc">
+            robots.txt parsing plus AI bot policy detection across 24 known crawlers (GPTBot, ClaudeBot, Google-Extended, PerplexityBot, and more). Sitemap discovery included.
+          </div>
+        </div>
+        <span class="api-card-link">Learn more →</span>
+      </a>
+    </div>
+  </section>
+
+  <!-- ── TrustScore detail ── -->
+  <section class="api-section" id="trustscore">
+    <div class="api-section-inner">
+      <div class="api-section-text">
+        <div class="api-section-route">GET /trustscore?domain=example.com</div>
+        <h2 class="api-section-title">TrustScore</h2>
+        <p class="api-section-desc">
+          Domain trust scoring built on four signals: WHOIS registration age, TLD risk category, DNS resolution and mail records, and registrar reputation. Returns structured JSON your agent can act on directly.
         </p>
+
+        <div class="signal-list">
+          <div class="signal-row"><span class="signal-name">Domain age (WHOIS)</span><span class="signal-pts">0 – 30 pts</span></div>
+          <div class="signal-row"><span class="signal-name">TLD risk classification</span><span class="signal-pts">0 – 20 pts</span></div>
+          <div class="signal-row"><span class="signal-name">DNS presence (A + MX)</span><span class="signal-pts">0 – 30 pts</span></div>
+          <div class="signal-row"><span class="signal-name">Registrar reputation</span><span class="signal-pts">10 – 20 pts</span></div>
+        </div>
+
+        <div class="tier-list">
+          <div class="tier-row"><span class="tier-badge tier-trusted">TRUSTED</span><span class="tier-range">75 – 100</span></div>
+          <div class="tier-row"><span class="tier-badge tier-moderate">MODERATE</span><span class="tier-range">50 – 74</span></div>
+          <div class="tier-row"><span class="tier-badge tier-caution">CAUTION</span><span class="tier-range">25 – 49</span></div>
+          <div class="tier-row"><span class="tier-badge tier-high-risk">HIGH_RISK</span><span class="tier-range">0 – 24</span></div>
+        </div>
       </div>
-      <div class="signal">
-        <div class="signal-header">
-          <span class="signal-name">TLD Risk</span>
-          <span class="signal-pts">0 – 20 pts</span>
-        </div>
-        <p class="signal-desc">
-          .com / .org / .io / .ai / .dev score highest. Known high-risk
-          TLDs (.tk, .xyz, .click, .ga) score zero — they're
-          disproportionately used in fraud and phishing.
-        </p>
-      </div>
-      <div class="signal">
-        <div class="signal-header">
-          <span class="signal-name">DNS Presence</span>
-          <span class="signal-pts">0 – 30 pts</span>
-        </div>
-        <p class="signal-desc">
-          Does the domain actually resolve? An A record confirms
-          something is running. MX records confirm a real operational
-          presence with email infrastructure.
-        </p>
-      </div>
-      <div class="signal">
-        <div class="signal-header">
-          <span class="signal-name">Registrar</span>
-          <span class="signal-pts">10 – 20 pts</span>
-        </div>
-        <p class="signal-desc">
-          Known established registrars (GoDaddy, Cloudflare, MarkMonitor,
-          Google, Namecheap, CSC) signal legitimate intent. Unknown or
-          obscure registrars score lower.
-        </p>
+      <div class="code-block">
+<span class="c-key">{</span>
+  <span class="c-key">"domain":</span>   <span class="c-str">"google.com"</span><span class="c-key">,</span>
+  <span class="c-key">"score":</span>    <span class="c-num">90</span><span class="c-key">,</span>
+  <span class="c-key">"tier":</span>     <span class="c-tier">"TRUSTED"</span><span class="c-key">,</span>
+  <span class="c-key">"breakdown":</span> <span class="c-key">{</span>
+    <span class="c-key">"domainAge":</span>   <span class="c-num">30</span><span class="c-key">,</span>
+    <span class="c-key">"tld":</span>         <span class="c-num">20</span><span class="c-key">,</span>
+    <span class="c-key">"dnsPresence":</span> <span class="c-num">30</span><span class="c-key">,</span>
+    <span class="c-key">"registrar":</span>   <span class="c-num">10</span>
+  <span class="c-key">},</span>
+  <span class="c-key">"details":</span> <span class="c-key">{</span>
+    <span class="c-key">"age":</span> <span class="c-key">{</span> <span class="c-key">"days":</span> <span class="c-num">10477</span><span class="c-key">,</span> <span class="c-key">"label":</span> <span class="c-str">"established"</span> <span class="c-key">},</span>
+    <span class="c-key">"tld":</span>       <span class="c-str">".com"</span><span class="c-key">,</span>
+    <span class="c-key">"dns":</span>       <span class="c-key">{</span> <span class="c-key">"hasARecord":</span> <span class="c-num">true</span><span class="c-key">,</span> <span class="c-key">"hasMxRecord":</span> <span class="c-num">true</span> <span class="c-key">},</span>
+    <span class="c-key">"registrar":</span> <span class="c-str">"markmonitor"</span>
+  <span class="c-key">}</span>
+<span class="c-key">}</span>
       </div>
     </div>
   </section>
 
-  <!-- ── Response ── -->
-  <section class="response-section" id="response">
-    <div class="response-text">
-      <div class="section-label">// Response structure</div>
-      <h2>Structured.<br/>Actionable.</h2>
-      <p>
-        Every response includes the score, breakdown by signal,
-        raw WHOIS and DNS details, and a risk tier your agent
-        can act on directly.
-      </p>
-      <div class="tiers">
-        <div class="tier">
-          <span class="tier-badge tier-trusted">TRUSTED</span>
-          <span class="tier-range">75 – 100</span>
+  <!-- ── SslCheck detail ── -->
+  <section class="api-section" id="sslcheck">
+    <div class="api-section-inner">
+      <div class="api-section-text">
+        <div class="api-section-route">GET /sslcheck?domain=example.com</div>
+        <h2 class="api-section-title">SslCheck</h2>
+        <p class="api-section-desc">
+          Live TLS handshake analysis. Walks the full certificate chain, detects trusted root CAs (Let's Encrypt, DigiCert, Cloudflare, GlobalSign, MarkMonitor, and more), validates expiry, scores crypto strength from the cipher suite, and grades modernity by TLS version.
+        </p>
+
+        <div class="signal-list">
+          <div class="signal-row"><span class="signal-name">Chain validity</span><span class="signal-pts">0 – 30 pts</span></div>
+          <div class="signal-row"><span class="signal-name">Trusted CA</span><span class="signal-pts">0 – 25 pts</span></div>
+          <div class="signal-row"><span class="signal-name">Not expired</span><span class="signal-pts">0 – 25 pts</span></div>
+          <div class="signal-row"><span class="signal-name">Strong crypto</span><span class="signal-pts">0 – 10 pts</span></div>
+          <div class="signal-row"><span class="signal-name">Modern TLS (1.2 / 1.3)</span><span class="signal-pts">0 – 10 pts</span></div>
         </div>
-        <div class="tier">
-          <span class="tier-badge tier-moderate">MODERATE</span>
-          <span class="tier-range">50 – 74</span>
-        </div>
-        <div class="tier">
-          <span class="tier-badge tier-caution">CAUTION</span>
-          <span class="tier-range">25 – 49</span>
-        </div>
-        <div class="tier">
-          <span class="tier-badge tier-high-risk">HIGH_RISK</span>
-          <span class="tier-range">0 – 24</span>
+
+        <div class="tier-list">
+          <div class="tier-row"><span class="tier-badge tier-valid">VALID</span><span class="tier-range">75 – 100</span></div>
+          <div class="tier-row"><span class="tier-badge tier-weak">WEAK</span><span class="tier-range">below 70</span></div>
+          <div class="tier-row"><span class="tier-badge tier-expiring">EXPIRING</span><span class="tier-range">&lt; 7 days left</span></div>
+          <div class="tier-row"><span class="tier-badge tier-untrusted">UNTRUSTED</span><span class="tier-range">self-signed</span></div>
+          <div class="tier-row"><span class="tier-badge tier-invalid">INVALID</span><span class="tier-range">chain failure</span></div>
+          <div class="tier-row"><span class="tier-badge tier-expired">EXPIRED</span><span class="tier-range">past validTo</span></div>
         </div>
       </div>
+      <div class="code-block">
+<span class="c-key">{</span>
+  <span class="c-key">"domain":</span> <span class="c-str">"google.com"</span><span class="c-key">,</span>
+  <span class="c-key">"score":</span>  <span class="c-num">100</span><span class="c-key">,</span>
+  <span class="c-key">"tier":</span>   <span class="c-tier">"VALID"</span><span class="c-key">,</span>
+  <span class="c-key">"breakdown":</span> <span class="c-key">{</span>
+    <span class="c-key">"chainValid":</span>   <span class="c-num">30</span><span class="c-key">,</span>
+    <span class="c-key">"trustedCa":</span>    <span class="c-num">25</span><span class="c-key">,</span>
+    <span class="c-key">"notExpired":</span>   <span class="c-num">25</span><span class="c-key">,</span>
+    <span class="c-key">"strongCrypto":</span> <span class="c-num">10</span><span class="c-key">,</span>
+    <span class="c-key">"modernTls":</span>    <span class="c-num">10</span>
+  <span class="c-key">},</span>
+  <span class="c-key">"certificate":</span> <span class="c-key">{</span>
+    <span class="c-key">"issuer":</span>        <span class="c-str">"Google Trust Services"</span><span class="c-key">,</span>
+    <span class="c-key">"daysRemaining":</span> <span class="c-num">66</span><span class="c-key">,</span>
+    <span class="c-key">"isSelfSigned":</span>  <span class="c-num">false</span>
+  <span class="c-key">},</span>
+  <span class="c-key">"connection":</span> <span class="c-key">{</span> <span class="c-key">"protocol":</span> <span class="c-meta">"TLSv1.3"</span> <span class="c-key">}</span>
+<span class="c-key">}</span>
+      </div>
     </div>
-    <div class="code-block">
+  </section>
+
+  <!-- ── Headers detail ── -->
+  <section class="api-section" id="headers">
+    <div class="api-section-inner">
+      <div class="api-section-text">
+        <div class="api-section-route">GET /headers?url=https://example.com</div>
+        <h2 class="api-section-title">Headers</h2>
+        <p class="api-section-desc">
+          HTTP security header analyzer. Fetches the target URL, parses response headers, and grades the site's security posture across eight dimensions. Returns a letter grade (A+ to F) plus a 0–100 score and per-header analysis with specific warnings.
+        </p>
+
+        <div class="signal-list">
+          <div class="signal-row"><span class="signal-name">HSTS (Strict-Transport-Security)</span><span class="signal-pts">0 – 20 pts</span></div>
+          <div class="signal-row"><span class="signal-name">Content Security Policy</span><span class="signal-pts">0 – 20 pts</span></div>
+          <div class="signal-row"><span class="signal-name">X-Frame-Options</span><span class="signal-pts">0 – 10 pts</span></div>
+          <div class="signal-row"><span class="signal-name">X-Content-Type-Options</span><span class="signal-pts">0 – 10 pts</span></div>
+          <div class="signal-row"><span class="signal-name">Referrer-Policy</span><span class="signal-pts">0 – 10 pts</span></div>
+          <div class="signal-row"><span class="signal-name">Permissions-Policy</span><span class="signal-pts">0 – 10 pts</span></div>
+          <div class="signal-row"><span class="signal-name">Cross-Origin-Opener-Policy</span><span class="signal-pts">0 – 10 pts</span></div>
+          <div class="signal-row"><span class="signal-name">Server header disclosure</span><span class="signal-pts">0 – 10 pts</span></div>
+        </div>
+
+        <div class="tier-list">
+          <div class="tier-row"><span class="tier-badge tier-a-plus">A+</span><span class="tier-range">90 – 100</span></div>
+          <div class="tier-row"><span class="tier-badge tier-a">A</span><span class="tier-range">80 – 89</span></div>
+          <div class="tier-row"><span class="tier-badge tier-b">B</span><span class="tier-range">70 – 79</span></div>
+          <div class="tier-row"><span class="tier-badge tier-caution">C</span><span class="tier-range">50 – 69</span></div>
+          <div class="tier-row"><span class="tier-badge tier-expiring">D</span><span class="tier-range">30 – 49</span></div>
+          <div class="tier-row"><span class="tier-badge tier-f">F</span><span class="tier-range">below 30</span></div>
+        </div>
+      </div>
+      <div class="code-block">
+<span class="c-key">{</span>
+  <span class="c-key">"url":</span>      <span class="c-str">"https://example.com"</span><span class="c-key">,</span>
+  <span class="c-key">"grade":</span>    <span class="c-tier">"A"</span><span class="c-key">,</span>
+  <span class="c-key">"score":</span>    <span class="c-num">82</span><span class="c-key">,</span>
+  <span class="c-key">"maxScore":</span> <span class="c-num">100</span><span class="c-key">,</span>
+  <span class="c-key">"analysis":</span> <span class="c-key">{</span>
+    <span class="c-key">"hsts":</span>          <span class="c-key">{</span> <span class="c-key">"present":</span> <span class="c-num">true</span><span class="c-key">,</span> <span class="c-key">"score":</span> <span class="c-num">20</span> <span class="c-key">},</span>
+    <span class="c-key">"csp":</span>           <span class="c-key">{</span> <span class="c-key">"present":</span> <span class="c-num">true</span><span class="c-key">,</span> <span class="c-key">"score":</span> <span class="c-num">18</span> <span class="c-key">},</span>
+    <span class="c-key">"xFrameOptions":</span> <span class="c-key">{</span> <span class="c-key">"present":</span> <span class="c-num">true</span><span class="c-key">,</span> <span class="c-key">"score":</span> <span class="c-num">10</span> <span class="c-key">}</span>
+  <span class="c-key">},</span>
+  <span class="c-key">"warnings":</span> <span class="c-key">[</span><span class="c-str">"missing_permissionsPolicy"</span><span class="c-key">]</span>
+<span class="c-key">}</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Robots detail ── -->
+  <section class="api-section" id="robots">
+    <div class="api-section-inner">
+      <div class="api-section-text">
+        <div class="api-section-route">GET /robots?domain=example.com</div>
+        <h2 class="api-section-title">Robots</h2>
+        <p class="api-section-desc">
+          robots.txt parser with structured AI bot policy analysis. Detects which of 24 known AI training crawlers — GPTBot, ClaudeBot, Google-Extended, PerplexityBot, Bytespider, CCBot, Applebot-Extended, and more — are blocked, partially restricted, or fully permitted. Sitemap URLs extracted automatically.
+        </p>
+
+        <div class="signal-list">
+          <div class="signal-row"><span class="signal-name">User-agent group parsing</span><span class="signal-pts">structured</span></div>
+          <div class="signal-row"><span class="signal-name">Allow / disallow rules</span><span class="signal-pts">per UA</span></div>
+          <div class="signal-row"><span class="signal-name">Crawl-delay extraction</span><span class="signal-pts">when set</span></div>
+          <div class="signal-row"><span class="signal-name">AI bot policy mapping</span><span class="signal-pts">24 bots</span></div>
+          <div class="signal-row"><span class="signal-name">Sitemap discovery</span><span class="signal-pts">all URLs</span></div>
+        </div>
+
+        <div class="tier-list">
+          <div class="tier-row"><span class="tier-badge tier-open">OPEN</span><span class="tier-range">no AI restrictions</span></div>
+          <div class="tier-row"><span class="tier-badge tier-selective">SELECTIVE</span><span class="tier-range">some bots restricted</span></div>
+          <div class="tier-row"><span class="tier-badge tier-blocked-ai">BLOCKED_AI</span><span class="tier-range">most AI bots blocked</span></div>
+          <div class="tier-row"><span class="tier-badge tier-blocked-all">BLOCKED_ALL</span><span class="tier-range">all crawlers blocked</span></div>
+          <div class="tier-row"><span class="tier-badge tier-valid">NO_ROBOTS_TXT</span><span class="tier-range">no file (open by default)</span></div>
+        </div>
+      </div>
+      <div class="code-block">
 <span class="c-key">{</span>
   <span class="c-key">"domain":</span>     <span class="c-str">"example.com"</span><span class="c-key">,</span>
-  <span class="c-key">"score":</span>      <span class="c-num">83</span><span class="c-key">,</span>
-  <span class="c-key">"maxScore":</span>   <span class="c-num">100</span><span class="c-key">,</span>
-  <span class="c-key">"tier":</span>       <span class="c-tier">"TRUSTED"</span><span class="c-key">,</span>
-
-  <span class="c-key">"breakdown":</span> <span class="c-key">{</span>
-    <span class="c-key">"domainAge":</span>   <span class="c-num">25</span><span class="c-key">,</span>
-    <span class="c-key">"tld":</span>         <span class="c-num">20</span><span class="c-key">,</span>
-    <span class="c-key">"dnsPresence":</span> <span class="c-num">28</span><span class="c-key">,</span>
-    <span class="c-key">"registrar":</span>   <span class="c-num">10</span>
+  <span class="c-key">"exists":</span>     <span class="c-num">true</span><span class="c-key">,</span>
+  <span class="c-key">"tier":</span>       <span class="c-tier">"OPEN"</span><span class="c-key">,</span>
+  <span class="c-key">"aiFriendly":</span> <span class="c-num">true</span><span class="c-key">,</span>
+  <span class="c-key">"ai":</span> <span class="c-key">{</span>
+    <span class="c-key">"knownBotsChecked":</span> <span class="c-num">24</span><span class="c-key">,</span>
+    <span class="c-key">"knownBotsBlocked":</span> <span class="c-num">0</span><span class="c-key">,</span>
+    <span class="c-key">"knownBotsPartial":</span> <span class="c-num">0</span>
   <span class="c-key">},</span>
-
-  <span class="c-key">"details":</span> <span class="c-key">{</span>
-    <span class="c-key">"age":</span> <span class="c-key">{</span>
-      <span class="c-key">"days":</span>    <span class="c-num">4821</span><span class="c-key">,</span>
-      <span class="c-key">"label":</span>   <span class="c-str">"mature (2–5 years)"</span><span class="c-key">,</span>
-      <span class="c-key">"created":</span> <span class="c-str">"2013-02-09T..."</span>
-    <span class="c-key">},</span>
-    <span class="c-key">"tld":</span>       <span class="c-str">".com"</span><span class="c-key">,</span>
-    <span class="c-key">"dns":</span> <span class="c-key">{</span>
-      <span class="c-key">"hasARecord":</span>  <span class="c-num">true</span><span class="c-key">,</span>
-      <span class="c-key">"hasMxRecord":</span> <span class="c-num">true</span>
-    <span class="c-key">},</span>
-    <span class="c-key">"registrar":</span> <span class="c-str">"godaddy"</span>
-  <span class="c-key">},</span>
-
-  <span class="c-key">"meta":</span> <span class="c-key">{</span>
-    <span class="c-key">"paidWith":</span>  <span class="c-meta">"x402/USDC"</span><span class="c-key">,</span>
-    <span class="c-key">"cached":</span>    <span class="c-num">false</span>
+  <span class="c-key">"sitemaps":</span> <span class="c-key">[</span>
+    <span class="c-str">"https://example.com/sitemap.xml"</span>
+  <span class="c-key">],</span>
+  <span class="c-key">"summary":</span> <span class="c-key">{</span>
+    <span class="c-key">"userAgentGroups":</span> <span class="c-num">6</span><span class="c-key">,</span>
+    <span class="c-key">"sitemaps":</span>        <span class="c-num">1</span>
   <span class="c-key">}</span>
 <span class="c-key">}</span>
+      </div>
     </div>
   </section>
 
   <!-- ── Pricing ── -->
   <section class="pricing-section">
-    <div class="section-label">// Pricing</div>
+    <div class="section-label">// Unified pricing</div>
     <div class="pricing-card">
       <div class="pricing-item">
         <div class="pricing-item-label">Per query</div>
-        <div class="pricing-item-value">$0.003 <span>USDC</span></div>
+        <div class="pricing-item-value">$0.002 <span>– $0.003 USDC</span></div>
       </div>
       <div class="pricing-item">
         <div class="pricing-item-label">Protocol</div>
-        <div class="pricing-item-value">x402 <span>/ Base</span></div>
+        <div class="pricing-item-value">x402 <span>/ Base Mainnet</span></div>
       </div>
       <div class="pricing-item">
         <div class="pricing-item-label">API key required</div>
@@ -725,8 +922,8 @@
 
   <!-- ── CTA ── -->
   <section class="cta-section">
-    <h2>Ready when<br/>your agent is.</h2>
-    <p>No signup. No API key. Discover and integrate via Agentic.Market.</p>
+    <h2>One wallet.<br/>Four endpoints.</h2>
+    <p>No signup. No API key. Discoverable on Agentic.Market.</p>
     <div class="cta-actions">
       <a href="https://agentic.market" target="_blank" class="btn-primary">
         View on Agentic.Market

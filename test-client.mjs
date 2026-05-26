@@ -13,7 +13,7 @@ const fetchWithPayment = wrapFetchWithPayment(fetch, client);
 
 console.log("Calling TrustScore API...");
 const response = await fetchWithPayment(
-  "https://trustsource.cc/sslcheck?domain=google.com"
+  "https://trustsource.cc/headers?url=https://google.com"
 );
 
 const data = await response.json();

@@ -50,6 +50,8 @@ const resourceServer = new x402ResourceServer(facilitatorClient)
 // ─── App ──────────────────────────────────────────────────────────────────────
 
 const app = express();
+
+app.set("trust proxy", true);
 app.use(cors());
 app.use(express.json());
 

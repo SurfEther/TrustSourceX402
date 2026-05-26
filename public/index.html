@@ -13,7 +13,7 @@
   <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@700;800&display=swap" rel="stylesheet" />
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
+ 
     :root {
       --bg:       #080808;
       --bg2:      #0f0f0f;
@@ -26,9 +26,9 @@
       --mono:     'DM Mono', monospace;
       --display:  'Syne', sans-serif;
     }
-
+ 
     html { scroll-behavior: smooth; }
-
+ 
     body {
       background: var(--bg);
       color: var(--text);
@@ -36,7 +36,7 @@
       min-height: 100vh;
       overflow-x: hidden;
     }
-
+ 
     /* ── Grid overlay ── */
     body::before {
       content: '';
@@ -50,7 +50,7 @@
       pointer-events: none;
       z-index: 0;
     }
-
+ 
     /* ── Nav ── */
     nav {
       position: fixed;
@@ -64,7 +64,7 @@
       backdrop-filter: blur(12px);
       border-bottom: 1px solid var(--border);
     }
-
+ 
     .nav-logo {
       font-family: var(--display);
       font-weight: 800;
@@ -74,7 +74,7 @@
       text-decoration: none;
     }
     .nav-logo span { color: var(--accent); }
-
+ 
     .nav-links { display: flex; gap: 32px; list-style: none; }
     .nav-links a {
       color: var(--muted);
@@ -85,7 +85,7 @@
       transition: color 0.2s;
     }
     .nav-links a:hover { color: var(--text); }
-
+ 
     /* ── Hero ── */
     .hero {
       position: relative;
@@ -98,7 +98,7 @@
       max-width: 1100px;
       margin: 0 auto;
     }
-
+ 
     .hero-tag {
       display: inline-flex;
       align-items: center;
@@ -111,7 +111,7 @@
       opacity: 0;
       animation: fadeUp 0.6s 0.1s forwards;
     }
-
+ 
     .hero-tag::before {
       content: '';
       display: block;
@@ -120,12 +120,12 @@
       border-radius: 50%;
       animation: pulse 2s infinite;
     }
-
+ 
     @keyframes pulse {
       0%, 100% { opacity: 1; transform: scale(1); }
       50%       { opacity: 0.5; transform: scale(1.4); }
     }
-
+ 
     .hero h1 {
       font-family: var(--display);
       font-weight: 800;
@@ -136,13 +136,13 @@
       opacity: 0;
       animation: fadeUp 0.6s 0.2s forwards;
     }
-
+ 
     .hero h1 em {
       font-style: normal;
       color: transparent;
       -webkit-text-stroke: 1px var(--accent);
     }
-
+ 
     .hero-sub {
       font-size: clamp(0.95rem, 2vw, 1.15rem);
       color: var(--muted);
@@ -152,7 +152,7 @@
       opacity: 0;
       animation: fadeUp 0.6s 0.3s forwards;
     }
-
+ 
     .hero-actions {
       display: flex;
       align-items: center;
@@ -161,7 +161,7 @@
       opacity: 0;
       animation: fadeUp 0.6s 0.4s forwards;
     }
-
+ 
     .btn-primary {
       display: inline-flex;
       align-items: center;
@@ -180,7 +180,7 @@
       clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px));
     }
     .btn-primary:hover { background: #00ffb3; transform: translateY(-2px); }
-
+ 
     .btn-secondary {
       display: inline-flex;
       align-items: center;
@@ -196,12 +196,12 @@
       transition: color 0.2s, border-color 0.2s;
     }
     .btn-secondary:hover { color: var(--text); border-color: var(--muted); }
-
+ 
     @keyframes fadeUp {
       from { opacity: 0; transform: translateY(16px); }
       to   { opacity: 1; transform: translateY(0); }
     }
-
+ 
     /* ── Stats bar ── */
     .stats {
       position: relative;
@@ -213,13 +213,13 @@
       max-width: 1100px;
       margin: 0 auto;
     }
-
+ 
     .stat {
       padding: 36px 32px;
       border-right: 1px solid var(--border);
     }
     .stat:last-child { border-right: none; }
-
+ 
     .stat-value {
       font-family: var(--display);
       font-size: 2.2rem;
@@ -235,7 +235,7 @@
       letter-spacing: 0.08em;
       text-transform: uppercase;
     }
-
+ 
     /* ── Section headers ── */
     .section {
       position: relative;
@@ -244,7 +244,7 @@
       margin: 0 auto;
       padding: 96px 40px;
     }
-
+ 
     .section-label {
       font-size: 0.7rem;
       letter-spacing: 0.14em;
@@ -252,7 +252,7 @@
       color: var(--accent);
       margin-bottom: 32px;
     }
-
+ 
     .section-title {
       font-family: var(--display);
       font-size: clamp(1.8rem, 4vw, 3rem);
@@ -261,7 +261,7 @@
       line-height: 1.05;
       margin-bottom: 16px;
     }
-
+ 
     .section-intro {
       color: var(--muted);
       font-size: 0.92rem;
@@ -269,7 +269,7 @@
       max-width: 620px;
       margin-bottom: 48px;
     }
-
+ 
     /* ── API overview cards ── */
     .api-cards {
       display: grid;
@@ -278,7 +278,7 @@
       background: var(--border);
       border: 1px solid var(--border);
     }
-
+ 
     .api-card {
       background: var(--bg);
       padding: 36px;
@@ -291,28 +291,28 @@
       min-height: 220px;
     }
     .api-card:hover { background: var(--bg2); }
-
+ 
     .api-card-header {
       display: flex;
       align-items: baseline;
       justify-content: space-between;
       margin-bottom: 16px;
     }
-
+ 
     .api-card-route {
       font-family: var(--mono);
       font-size: 0.95rem;
       color: var(--accent);
       letter-spacing: -0.01em;
     }
-
+ 
     .api-card-price {
       font-size: 0.7rem;
       color: var(--muted);
       letter-spacing: 0.06em;
       font-family: var(--mono);
     }
-
+ 
     .api-card-title {
       font-family: var(--display);
       font-size: 1.5rem;
@@ -320,7 +320,7 @@
       letter-spacing: -0.02em;
       margin-bottom: 12px;
     }
-
+ 
     .api-card-desc {
       font-size: 0.82rem;
       color: var(--muted);
@@ -328,7 +328,7 @@
       margin-bottom: 20px;
       flex-grow: 1;
     }
-
+ 
     .api-card-link {
       font-size: 0.7rem;
       letter-spacing: 0.08em;
@@ -338,7 +338,7 @@
       align-items: center;
       gap: 6px;
     }
-
+ 
     /* ── Per-API detail sections ── */
     .api-section {
       position: relative;
@@ -346,7 +346,7 @@
       border-top: 1px solid var(--border);
       padding: 96px 40px;
     }
-
+ 
     .api-section-inner {
       max-width: 1100px;
       margin: 0 auto;
@@ -355,17 +355,19 @@
       gap: 80px;
       align-items: start;
     }
-
+ 
     .api-section-text { padding-top: 8px; }
-
+ 
     .api-section-route {
       font-family: var(--mono);
-      font-size: 0.85rem;
+      font-size: 0.78rem;
       color: var(--accent);
-      margin-bottom: 12px;
+      margin-bottom: 14px;
       letter-spacing: 0.02em;
+      word-break: break-all;
+      line-height: 1.5;
     }
-
+ 
     .api-section-title {
       font-family: var(--display);
       font-size: clamp(1.6rem, 3vw, 2.4rem);
@@ -374,21 +376,21 @@
       line-height: 1.05;
       margin-bottom: 16px;
     }
-
+ 
     .api-section-desc {
       font-size: 0.88rem;
       color: var(--muted);
       line-height: 1.75;
       margin-bottom: 32px;
     }
-
+ 
     .signal-list {
       display: flex;
       flex-direction: column;
       gap: 14px;
       margin-bottom: 32px;
     }
-
+ 
     .signal-row {
       display: flex;
       align-items: baseline;
@@ -398,23 +400,23 @@
       font-size: 0.82rem;
     }
     .signal-row:last-child { border-bottom: none; }
-
+ 
     .signal-name { color: var(--text); }
     .signal-pts { color: var(--accent); font-size: 0.72rem; letter-spacing: 0.06em; }
-
+ 
     .tier-list {
       display: flex;
       flex-direction: column;
       gap: 8px;
     }
-
+ 
     .tier-row {
       display: flex;
       align-items: center;
       gap: 12px;
       font-size: 0.78rem;
     }
-
+ 
     .tier-badge {
       font-family: var(--mono);
       font-size: 0.62rem;
@@ -424,14 +426,14 @@
       min-width: 110px;
       text-align: center;
     }
-
+ 
     .tier-trusted, .tier-valid, .tier-open, .tier-a-plus { background: rgba(0,229,160,0.15); color: #00e5a0; border: 1px solid rgba(0,229,160,0.3); }
     .tier-moderate, .tier-weak, .tier-selective, .tier-a { background: rgba(255,200,0,0.1); color: #ffc800; border: 1px solid rgba(255,200,0,0.2); }
     .tier-caution, .tier-expiring, .tier-blocked-ai, .tier-b { background: rgba(255,120,0,0.1); color: #ff7800; border: 1px solid rgba(255,120,0,0.2); }
     .tier-high-risk, .tier-expired, .tier-untrusted, .tier-invalid, .tier-blocked-all, .tier-f { background: rgba(255,60,60,0.1); color: #ff3c3c; border: 1px solid rgba(255,60,60,0.2); }
-
+ 
     .tier-range { color: var(--muted); font-size: 0.72rem; }
-
+ 
     /* ── Code block ── */
     .code-block {
       background: var(--bg2);
@@ -443,7 +445,7 @@
       overflow-x: auto;
       position: relative;
     }
-
+ 
     .code-block::before {
       content: 'RESPONSE';
       position: absolute;
@@ -452,13 +454,13 @@
       letter-spacing: 0.12em;
       color: var(--muted);
     }
-
+ 
     .c-key { color: #888; }
     .c-str { color: #a8d8a8; }
     .c-num { color: var(--accent); }
     .c-tier { color: #ffd580; }
     .c-meta { color: #7eb8f7; }
-
+ 
     /* ── Pricing ── */
     .pricing-section {
       position: relative;
@@ -468,19 +470,19 @@
       margin: 0 auto;
       padding: 96px 40px;
     }
-
+ 
     .pricing-card {
       border: 1px solid var(--border);
       display: grid;
       grid-template-columns: 1fr 1fr 1fr;
     }
-
+ 
     .pricing-item {
       padding: 40px;
       border-right: 1px solid var(--border);
     }
     .pricing-item:last-child { border-right: none; }
-
+ 
     .pricing-item-label {
       font-size: 0.68rem;
       letter-spacing: 0.12em;
@@ -488,7 +490,7 @@
       color: var(--muted);
       margin-bottom: 12px;
     }
-
+ 
     .pricing-item-value {
       font-family: var(--display);
       font-size: 1.8rem;
@@ -501,7 +503,7 @@
       font-weight: 400;
       letter-spacing: 0;
     }
-
+ 
     /* ── CTA ── */
     .cta-section {
       position: relative;
@@ -512,7 +514,7 @@
       padding: 96px 40px;
       text-align: center;
     }
-
+ 
     .cta-section h2 {
       font-family: var(--display);
       font-size: clamp(2rem, 5vw, 4rem);
@@ -521,13 +523,13 @@
       line-height: 1.05;
       margin-bottom: 16px;
     }
-
+ 
     .cta-section p {
       color: var(--muted);
       font-size: 0.85rem;
       margin-bottom: 48px;
     }
-
+ 
     .cta-actions {
       display: flex;
       justify-content: center;
@@ -535,7 +537,7 @@
       gap: 20px;
       flex-wrap: wrap;
     }
-
+ 
     /* ── Footer ── */
     footer {
       position: relative;
@@ -548,7 +550,7 @@
       justify-content: space-between;
       align-items: center;
     }
-
+ 
     .footer-logo {
       font-family: var(--display);
       font-size: 0.9rem;
@@ -558,7 +560,7 @@
       text-decoration: none;
     }
     .footer-logo span { color: var(--accent); }
-
+ 
     .footer-links { display: flex; gap: 24px; list-style: none; }
     .footer-links a {
       color: var(--muted);
@@ -568,7 +570,7 @@
       transition: color 0.2s;
     }
     .footer-links a:hover { color: var(--text); }
-
+ 
     @media (max-width: 768px) {
       nav { padding: 16px 20px; }
       .nav-links { display: none; }
@@ -588,7 +590,7 @@
   </style>
 </head>
 <body>
-
+ 
   <nav>
     <a href="/" class="nav-logo">Trust<span>Source</span></a>
     <ul class="nav-links">
@@ -597,16 +599,17 @@
       <li><a href="#sslcheck">SslCheck</a></li>
       <li><a href="#headers">Headers</a></li>
       <li><a href="#robots">Robots</a></li>
-      <li><a href="/openapi.json" target="_blank">Spec</a></li>
+      <li><a href="https://api.trustsource.cc/openapi.json" target="_blank">Spec</a></li>
     </ul>
   </nav>
-
+ 
   <!-- ── Hero ── -->
   <section class="hero">
     <div class="hero-tag">x402 · Base Mainnet · 4 endpoints live</div>
     <h1>Verification<br/>intelligence<br/>for <em>agents.</em></h1>
     <p class="hero-sub">
-      Four x402-powered APIs that autonomous AI agents use before they transact.
+      Four x402-powered APIs at <code style="color:var(--accent); background:var(--bg2); padding:2px 6px; font-size:0.85em;">api.trustsource.cc</code>
+      that autonomous AI agents use before they transact.
       Domain trust scoring. SSL certificate intelligence. HTTP security header audits.
       Robots.txt and AI bot policy detection.
       No API keys. Pay per query in USDC.
@@ -619,10 +622,10 @@
         </svg>
       </a>
       <a href="#apis" class="btn-secondary">Explore APIs</a>
-      <a href="/openapi.json" target="_blank" class="btn-secondary">OpenAPI Spec</a>
+      <a href="https://api.trustsource.cc/openapi.json" target="_blank" class="btn-secondary">OpenAPI Spec</a>
     </div>
   </section>
-
+ 
   <!-- ── Stats ── -->
   <div class="stats">
     <div class="stat">
@@ -642,7 +645,7 @@
       <div class="stat-label">Result cache</div>
     </div>
   </div>
-
+ 
   <!-- ── API overview cards ── -->
   <section class="section" id="apis">
     <div class="section-label">// Four endpoints</div>
@@ -664,7 +667,7 @@
         </div>
         <span class="api-card-link">Learn more →</span>
       </a>
-
+ 
       <a href="#sslcheck" class="api-card">
         <div>
           <div class="api-card-header">
@@ -678,7 +681,7 @@
         </div>
         <span class="api-card-link">Learn more →</span>
       </a>
-
+ 
       <a href="#headers" class="api-card">
         <div>
           <div class="api-card-header">
@@ -692,7 +695,7 @@
         </div>
         <span class="api-card-link">Learn more →</span>
       </a>
-
+ 
       <a href="#robots" class="api-card">
         <div>
           <div class="api-card-header">
@@ -708,24 +711,24 @@
       </a>
     </div>
   </section>
-
+ 
   <!-- ── TrustScore detail ── -->
   <section class="api-section" id="trustscore">
     <div class="api-section-inner">
       <div class="api-section-text">
-        <div class="api-section-route">GET /trustscore?domain=example.com</div>
+        <div class="api-section-route">GET https://api.trustsource.cc/trustscore?domain=example.com</div>
         <h2 class="api-section-title">TrustScore</h2>
         <p class="api-section-desc">
           Domain trust scoring built on four signals: WHOIS registration age, TLD risk category, DNS resolution and mail records, and registrar reputation. Returns structured JSON your agent can act on directly.
         </p>
-
+ 
         <div class="signal-list">
           <div class="signal-row"><span class="signal-name">Domain age (WHOIS)</span><span class="signal-pts">0 – 30 pts</span></div>
           <div class="signal-row"><span class="signal-name">TLD risk classification</span><span class="signal-pts">0 – 20 pts</span></div>
           <div class="signal-row"><span class="signal-name">DNS presence (A + MX)</span><span class="signal-pts">0 – 30 pts</span></div>
           <div class="signal-row"><span class="signal-name">Registrar reputation</span><span class="signal-pts">10 – 20 pts</span></div>
         </div>
-
+ 
         <div class="tier-list">
           <div class="tier-row"><span class="tier-badge tier-trusted">TRUSTED</span><span class="tier-range">75 – 100</span></div>
           <div class="tier-row"><span class="tier-badge tier-moderate">MODERATE</span><span class="tier-range">50 – 74</span></div>
@@ -754,17 +757,17 @@
       </div>
     </div>
   </section>
-
+ 
   <!-- ── SslCheck detail ── -->
   <section class="api-section" id="sslcheck">
     <div class="api-section-inner">
       <div class="api-section-text">
-        <div class="api-section-route">GET /sslcheck?domain=example.com</div>
+        <div class="api-section-route">GET https://api.trustsource.cc/sslcheck?domain=example.com</div>
         <h2 class="api-section-title">SslCheck</h2>
         <p class="api-section-desc">
           Live TLS handshake analysis. Walks the full certificate chain, detects trusted root CAs (Let's Encrypt, DigiCert, Cloudflare, GlobalSign, MarkMonitor, and more), validates expiry, scores crypto strength from the cipher suite, and grades modernity by TLS version.
         </p>
-
+ 
         <div class="signal-list">
           <div class="signal-row"><span class="signal-name">Chain validity</span><span class="signal-pts">0 – 30 pts</span></div>
           <div class="signal-row"><span class="signal-name">Trusted CA</span><span class="signal-pts">0 – 25 pts</span></div>
@@ -772,7 +775,7 @@
           <div class="signal-row"><span class="signal-name">Strong crypto</span><span class="signal-pts">0 – 10 pts</span></div>
           <div class="signal-row"><span class="signal-name">Modern TLS (1.2 / 1.3)</span><span class="signal-pts">0 – 10 pts</span></div>
         </div>
-
+ 
         <div class="tier-list">
           <div class="tier-row"><span class="tier-badge tier-valid">VALID</span><span class="tier-range">75 – 100</span></div>
           <div class="tier-row"><span class="tier-badge tier-weak">WEAK</span><span class="tier-range">below 70</span></div>
@@ -804,17 +807,17 @@
       </div>
     </div>
   </section>
-
+ 
   <!-- ── Headers detail ── -->
   <section class="api-section" id="headers">
     <div class="api-section-inner">
       <div class="api-section-text">
-        <div class="api-section-route">GET /headers?url=https://example.com</div>
+        <div class="api-section-route">GET https://api.trustsource.cc/headers?url=https://example.com</div>
         <h2 class="api-section-title">Headers</h2>
         <p class="api-section-desc">
           HTTP security header analyzer. Fetches the target URL, parses response headers, and grades the site's security posture across eight dimensions. Returns a letter grade (A+ to F) plus a 0–100 score and per-header analysis with specific warnings.
         </p>
-
+ 
         <div class="signal-list">
           <div class="signal-row"><span class="signal-name">HSTS (Strict-Transport-Security)</span><span class="signal-pts">0 – 20 pts</span></div>
           <div class="signal-row"><span class="signal-name">Content Security Policy</span><span class="signal-pts">0 – 20 pts</span></div>
@@ -825,7 +828,7 @@
           <div class="signal-row"><span class="signal-name">Cross-Origin-Opener-Policy</span><span class="signal-pts">0 – 10 pts</span></div>
           <div class="signal-row"><span class="signal-name">Server header disclosure</span><span class="signal-pts">0 – 10 pts</span></div>
         </div>
-
+ 
         <div class="tier-list">
           <div class="tier-row"><span class="tier-badge tier-a-plus">A+</span><span class="tier-range">90 – 100</span></div>
           <div class="tier-row"><span class="tier-badge tier-a">A</span><span class="tier-range">80 – 89</span></div>
@@ -851,17 +854,17 @@
       </div>
     </div>
   </section>
-
+ 
   <!-- ── Robots detail ── -->
   <section class="api-section" id="robots">
     <div class="api-section-inner">
       <div class="api-section-text">
-        <div class="api-section-route">GET /robots?domain=example.com</div>
+        <div class="api-section-route">GET https://api.trustsource.cc/robots?domain=example.com</div>
         <h2 class="api-section-title">Robots</h2>
         <p class="api-section-desc">
           robots.txt parser with structured AI bot policy analysis. Detects which of 24 known AI training crawlers — GPTBot, ClaudeBot, Google-Extended, PerplexityBot, Bytespider, CCBot, Applebot-Extended, and more — are blocked, partially restricted, or fully permitted. Sitemap URLs extracted automatically.
         </p>
-
+ 
         <div class="signal-list">
           <div class="signal-row"><span class="signal-name">User-agent group parsing</span><span class="signal-pts">structured</span></div>
           <div class="signal-row"><span class="signal-name">Allow / disallow rules</span><span class="signal-pts">per UA</span></div>
@@ -869,7 +872,7 @@
           <div class="signal-row"><span class="signal-name">AI bot policy mapping</span><span class="signal-pts">24 bots</span></div>
           <div class="signal-row"><span class="signal-name">Sitemap discovery</span><span class="signal-pts">all URLs</span></div>
         </div>
-
+ 
         <div class="tier-list">
           <div class="tier-row"><span class="tier-badge tier-open">OPEN</span><span class="tier-range">no AI restrictions</span></div>
           <div class="tier-row"><span class="tier-badge tier-selective">SELECTIVE</span><span class="tier-range">some bots restricted</span></div>
@@ -900,7 +903,7 @@
       </div>
     </div>
   </section>
-
+ 
   <!-- ── Pricing ── -->
   <section class="pricing-section">
     <div class="section-label">// Unified pricing</div>
@@ -919,7 +922,7 @@
       </div>
     </div>
   </section>
-
+ 
   <!-- ── CTA ── -->
   <section class="cta-section">
     <h2>One wallet.<br/>Four endpoints.</h2>
@@ -931,21 +934,21 @@
           <path d="M3 11L11 3M11 3H5M11 3V9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
         </svg>
       </a>
-      <a href="/openapi.json" target="_blank" class="btn-secondary">OpenAPI Spec</a>
+      <a href="https://api.trustsource.cc/openapi.json" target="_blank" class="btn-secondary">OpenAPI Spec</a>
       <a href="mailto:hello@trustsource.cc" class="btn-secondary">hello@trustsource.cc</a>
     </div>
   </section>
-
+ 
   <!-- ── Footer ── -->
   <footer>
     <a href="/" class="footer-logo">Trust<span>Source</span></a>
     <ul class="footer-links">
-      <li><a href="/openapi.json" target="_blank">API Spec</a></li>
+      <li><a href="https://api.trustsource.cc/openapi.json" target="_blank">API Spec</a></li>
       <li><a href="https://agentic.market" target="_blank">Agentic.Market</a></li>
       <li><a href="https://x402.org" target="_blank">x402 Protocol</a></li>
       <li><a href="mailto:support@trustsource.cc">Contact</a></li>
     </ul>
   </footer>
-
+ 
 </body>
 </html>

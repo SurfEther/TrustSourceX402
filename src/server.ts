@@ -53,8 +53,12 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// Trust Railway's single proxy hop — needed for req.protocol to detect HTTPS
+// and for x402 to build the resource URL correctly in 402 responses.
 app.set("trust proxy", 1);
 
+// Rate limiter — uses a custom keyGenerator so we don't depend on trust proxy
+// for IP detection (more secure than blanket trusting forwarded headers).
 const limiter = rateLimit({
   windowMs: 60 * 1000,
   max: 60,
@@ -67,9 +71,27 @@ const limiter = rateLimit({
            "unknown";
   },
   validate: {
-    trustProxy: false,                  // we set it intentionally to 1
-    keyGeneratorIpFallback: false,      // we use our own IP detection
+    trustProxy:               false,   // we set it intentionally to 1
+    keyGeneratorIpFallback:   false,   // we use our own IP detection
   },
+});
+
+// Safety net: ensure 402 responses always carry the PAYMENT-REQUIRED header.
+// @x402/express in some configurations puts the v2 payload in the body only —
+// this catches that case so Bazaar discovery validation passes.
+app.use((_req, res, next) => {
+  const originalJson = res.json.bind(res);
+  res.json = (body: unknown) => {
+    if (res.statusCode === 402 &&
+        body && typeof body === "object" &&
+        (body as { x402Version?: number }).x402Version === 2 &&
+        !res.getHeader("PAYMENT-REQUIRED")) {
+      const encoded = Buffer.from(JSON.stringify(body)).toString("base64");
+      res.setHeader("PAYMENT-REQUIRED", encoded);
+    }
+    return originalJson(body);
+  };
+  next();
 });
 
 // ─── Free routes ─────────────────────────────────────────────────────────────
@@ -118,8 +140,11 @@ app.get("/", (req, res) => {
       payTo:       PAY_TO,
     },
     links: {
-      docs:   "https://trustsource.cc/openapi.json",
-      bazaar: "https://agentic.market",
+      docs:    "https://api.trustsource.cc/openapi.json",
+      api:     "https://api.trustsource.cc",
+      web:     "https://trustsource.cc",
+      bazaar:  "https://agentic.market",
+      contact: "mailto:hello@trustsource.cc",
     },
   });
 });
@@ -237,14 +262,14 @@ app.use((_req, res) => {
 
 app.listen(PORT, () => {
   console.log(`
-╔══════════════════════════════════════════════════════╗
-║          TrustSource API — Server Running           ║
-╠══════════════════════════════════════════════════════╣
-║  URL       : http://localhost:${PORT}                   ║
+╔═════════════════════════════════════════════════════════════════════════╗
+║          TrustSource API — Server Running                               ║
+╠═════════════════════════════════════════════════════════════════════════╣
+║  URL       : http://localhost:${PORT}                                   ║
 ║  Network   : ${NETWORK} ${IS_MAINNET ? "(MAINNET 🟢)" : "(TESTNET ✓) "} ║
-║  Pay to    : ${PAY_TO.slice(0, 10)}...                       ║
-║  Facilitator: ${IS_MAINNET ? "CDP (production) " : "x402.org (public) "}         ║
-╠══════════════════════════════════════════════════════╣
+║  Pay to    : ${PAY_TO.slice(0, 10)}...                                  ║
+║  Facilitator: ${IS_MAINNET ? "CDP (production) " : "x402.org (public) "}║
+╠═════════════════════════════════════════════════════════════════════════╣
 ║  Endpoints:                                          ║
 ║    GET /              → Landing / API info (free)    ║
 ║    GET /health        → Health check     (free)      ║

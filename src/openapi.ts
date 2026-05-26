@@ -6,31 +6,37 @@ const spec = {
   openapi: "3.1.0",
   info: {
     title:       "TrustSource API",
-    version:     "0.3.0",
-    description: "x402-powered domain trust, SSL, security, and crawler-policy intelligence for AI agents. Returns structured JSON over four paid endpoints. No API keys — pay per use with USDC via x402 protocol.",
-    contact: { url: "https://trustsource.cc" },
-    license: { name: "Commercial", url:  "https://trustsource.cc/terms" },
+    version:     "1.0.0",
+    description: "x402-powered domain trust and safety scoring API for AI agents. Returns structured trust intelligence on any domain — no API keys, no accounts. Pay per use with USDC via the x402 protocol.",
+    contact: {
+      url: "https://trustsource.cc",
+    },
+    license: {
+      name: "Commercial",
+      url:  "https://trustsource.cc/terms",
+    },
   },
   servers: [
-    { url: "https://trustsource.cc", description: "Production (Base Mainnet)" },
-  ],
-  tags: [
-    { name: "Discovery", description: "Free endpoints — API info, health, this spec" },
-    { name: "Trust",     description: "Paid endpoints — structured intelligence APIs" },
+    {
+      url:         "https://trustsource.cc",
+      description: "Production (Base Mainnet)",
+    },
   ],
   paths: {
-    // ─── Discovery (free) ─────────────────────────────────────────────────────
-
     "/": {
       get: {
         operationId: "getApiInfo",
         summary:     "API discovery info",
-        description: "Returns API metadata, endpoint listing, pricing, and payment details. Browsers get the landing page HTML; agents/curl get JSON.",
+        description: "Returns API metadata, available endpoints, pricing, and payment details. Free — no payment required.",
         tags:        ["Discovery"],
         responses: {
           "200": {
             description: "API info",
-            content: { "application/json": { schema: { $ref: "#/components/schemas/ApiInfo" } } },
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/ApiInfo" },
+              },
+            },
           },
         },
       },
@@ -39,18 +45,22 @@ const spec = {
       get: {
         operationId: "getHealth",
         summary:     "Health check",
-        description: "Server status. Free.",
+        description: "Returns server status. Free — no payment required.",
         tags:        ["Discovery"],
         responses: {
           "200": {
-            description: "Healthy",
-            content: { "application/json": { schema: {
-              type: "object",
-              properties: {
-                status:    { type: "string", example: "ok" },
-                timestamp: { type: "string", format: "date-time" },
+            description: "Server is healthy",
+            content: {
+              "application/json": {
+                schema: {
+                  type:       "object",
+                  properties: {
+                    status:    { type: "string", example: "ok" },
+                    timestamp: { type: "string", format: "date-time" },
+                  },
+                },
               },
-            } } },
+            },
           },
         },
       },
@@ -59,14 +69,20 @@ const spec = {
       get: {
         operationId: "getOpenApiSpec",
         summary:     "OpenAPI specification",
-        description: "Machine-readable OpenAPI 3.1 spec.",
+        description: "Returns this machine-readable OpenAPI 3.1 spec. Free — no payment required.",
         tags:        ["Discovery"],
-        responses: { "200": { description: "OpenAPI spec" } },
+        responses: {
+          "200": {
+            description: "OpenAPI spec",
+            content: {
+              "application/json": {
+                schema: { type: "object" },
+              },
+            },
+          },
+        },
       },
     },
-
-    // ─── Trust APIs (paid) ────────────────────────────────────────────────────
-
     "/trustscore": {
       get: {
         operationId: "getTrustScore",
@@ -75,46 +91,118 @@ const spec = {
         description: [
           "Returns a 0–100 trust score for any domain or URL.",
           "Analyzes domain age (WHOIS), TLD risk, DNS presence, and registrar reputation.",
+          "Returns structured JSON including a tier (TRUSTED/MODERATE/CAUTION/HIGH_RISK),",
+          "full scoring breakdown, and detailed signals.",
           "",
-          "**Payment:** 0.003 USDC per call via x402 (Base Mainnet).",
-          "**Caching:** 1 hour per domain.",
+          "**Payment:** 0.003 USDC per call via x402 protocol (Base Mainnet).",
+          "Clients must handle HTTP 402 responses by paying the specified amount",
+          "and retrying with the payment proof header.",
+          "",
+          "**Caching:** Results are cached for 1 hour per domain.",
         ].join("\n"),
         tags: ["Trust"],
         parameters: [
-          { name: "domain", in: "query", required: false,
-            schema: { type: "string", maxLength: 253, example: "google.com" } },
-          { name: "url", in: "query", required: false,
-            schema: { type: "string", example: "https://example.com/page" } },
+          {
+            name:        "domain",
+            in:          "query",
+            description: "Domain name to score (e.g. example.com)",
+            required:    false,
+            schema: {
+              type:      "string",
+              maxLength: 253,
+              example:   "google.com",
+            },
+          },
+          {
+            name:        "url",
+            in:          "query",
+            description: "Full URL to score — domain is extracted automatically (e.g. https://example.com/path)",
+            required:    false,
+            schema: {
+              type:    "string",
+              example: "https://example.com/some/page",
+            },
+          },
         ],
         responses: {
-          "200": { description: "Trust score returned",
-            content: { "application/json": {
-              schema:  { $ref: "#/components/schemas/TrustScoreResponse" },
-              example: {
-                domain: "google.com", score: 90, maxScore: 100, tier: "TRUSTED",
-                breakdown: { domainAge: 30, tld: 20, dnsPresence: 30, registrar: 10 },
-                details: {
-                  age: { days: 10477, label: "established (5+ years)" },
-                  tld: ".com",
-                  dns: { hasARecord: true, hasMxRecord: true, mxRecords: ["smtp.google.com"] },
-                  registrar: "markmonitor, inc.",
+          "200": {
+            description: "Trust score returned successfully",
+            content: {
+              "application/json": {
+                schema:  { $ref: "#/components/schemas/TrustScoreResponse" },
+                example: {
+                  domain:   "google.com",
+                  score:    90,
+                  maxScore: 100,
+                  tier:     "TRUSTED",
+                  breakdown: {
+                    domainAge:   30,
+                    tld:         20,
+                    dnsPresence: 30,
+                    registrar:   10,
+                  },
+                  details: {
+                    age: {
+                      days:    10477,
+                      label:   "established (5+ years)",
+                      created: "1997-09-15T07:00:00+0000",
+                      expires: null,
+                    },
+                    tld: ".com",
+                    dns: {
+                      hasARecord:  true,
+                      hasMxRecord: true,
+                      mxRecords:   ["smtp.google.com"],
+                    },
+                    registrar: "markmonitor, inc.",
+                  },
+                  meta: {
+                    checkedAt:  "2026-05-23T12:00:00.000Z",
+                    apiVersion: "1.0",
+                    paidWith:   "x402/USDC",
+                    cached:     false,
+                  },
                 },
-                meta: { checkedAt: "2026-05-25T12:00:00Z", paidWith: "x402/USDC", cached: false },
               },
-            } },
+            },
           },
-          "400": { description: "Invalid or missing domain" },
-          "402": { description: "Payment required — pay 0.003 USDC via x402",
-            headers: { "PAYMENT-REQUIRED": {
-              description: "Base64-encoded payment requirements", schema: { type: "string" },
-            } },
+          "400": {
+            description: "Invalid or missing domain parameter",
+            content: {
+              "application/json": {
+                schema:  { $ref: "#/components/schemas/ErrorResponse" },
+                example: { error: "Missing parameter", message: "Provide ?domain=example.com or ?url=https://example.com" },
+              },
+            },
           },
-          "429": { description: "Rate limit exceeded" },
-          "500": { description: "Lookup failed" },
+          "402": {
+            description: "Payment required — client must pay 0.003 USDC via x402 and retry",
+            headers: {
+              "PAYMENT-REQUIRED": {
+                description: "Base64-encoded JSON payment requirements including price, network, and payTo address",
+                schema: { type: "string" },
+              },
+            },
+          },
+          "429": {
+            description: "Rate limit exceeded — max 60 requests per minute",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/ErrorResponse" },
+              },
+            },
+          },
+          "500": {
+            description: "Lookup failed — WHOIS or DNS error",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/ErrorResponse" },
+              },
+            },
+          },
         },
       },
     },
-
     "/sslcheck": {
       get: {
         operationId: "getSslCheck",
@@ -125,187 +213,154 @@ const spec = {
           "Performs a live TLS handshake and analyzes the certificate chain,",
           "expiry, signature algorithm, trust anchor, and protocol version.",
           "",
-          "**Payment:** 0.002 USDC per call via x402 (Base Mainnet).",
-          "**Caching:** 6 hours per domain (certificates change rarely).",
-        ].join("\n"),
-        tags: ["Trust"],
-        parameters: [
-          { name: "domain", in: "query", required: false,
-            schema: { type: "string", maxLength: 253, example: "google.com" } },
-          { name: "url", in: "query", required: false,
-            schema: { type: "string", example: "https://example.com/page" } },
-        ],
-        responses: {
-          "200": { description: "SSL check completed",
-            content: { "application/json": { schema: { $ref: "#/components/schemas/SslCheckResponse" } } },
-          },
-          "400": { description: "Invalid or missing domain" },
-          "402": { description: "Payment required — pay 0.002 USDC via x402" },
-          "429": { description: "Rate limit exceeded" },
-          "502": { description: "TLS handshake failed (timeout, no cert, refused)" },
-        },
-      },
-    },
-
-    "/headers": {
-      get: {
-        operationId: "getHeaderAudit",
-        security:    [{ x402: [] }],
-        summary:     "HTTP security header audit",
-        description: [
-          "Analyzes HTTP response headers for security posture.",
-          "Returns a letter grade (A+ to F) and 0–100 score across 8 dimensions:",
-          "HSTS, CSP, X-Frame-Options, X-Content-Type-Options, Referrer-Policy,",
-          "Permissions-Policy, Cross-Origin-Opener-Policy, and server header disclosure.",
+          "**Payment:** 0.002 USDC per call via x402 protocol (Base Mainnet).",
           "",
-          "**Payment:** 0.003 USDC per call via x402 (Base Mainnet).",
-          "**Caching:** 4 hours per URL.",
-          "**Security:** Restricted to ports 80/443/8080/8443. Private IPs blocked.",
+          "**Caching:** Results cached for 6 hours per domain (certificates change rarely).",
         ].join("\n"),
         tags: ["Trust"],
         parameters: [
-          { name: "url", in: "query", required: false,
-            schema: { type: "string", maxLength: 2048, example: "https://example.com" } },
-          { name: "domain", in: "query", required: false,
-            schema: { type: "string", maxLength: 253, example: "example.com" } },
+          {
+            name:        "domain",
+            in:          "query",
+            description: "Domain name to check (e.g. example.com)",
+            required:    false,
+            schema:      { type: "string", maxLength: 253, example: "google.com" },
+          },
+          {
+            name:        "url",
+            in:          "query",
+            description: "Full URL — domain extracted automatically",
+            required:    false,
+            schema:      { type: "string", example: "https://example.com/page" },
+          },
         ],
         responses: {
-          "200": { description: "Header audit completed",
-            content: { "application/json": { schema: { $ref: "#/components/schemas/HeadersResponse" } } },
+          "200": {
+            description: "SSL check completed",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/SslCheckResponse" },
+              },
+            },
           },
-          "400": { description: "Invalid URL or unsupported scheme/port" },
-          "402": { description: "Payment required — pay 0.003 USDC via x402" },
-          "429": { description: "Rate limit exceeded" },
-          "502": { description: "Could not reach target URL" },
-        },
-      },
-    },
-
-    "/robots": {
-      get: {
-        operationId: "getRobotsCheck",
-        security:    [{ x402: [] }],
-        summary:     "robots.txt intelligence + AI bot policy",
-        description: [
-          "Fetches and parses robots.txt for any domain. Detects which AI training",
-          "bots are blocked, partially restricted, or fully permitted. Tracks 24",
-          "known AI bots (GPTBot, ClaudeBot, Google-Extended, PerplexityBot, Bytespider,",
-          "CCBot, Applebot-Extended, and more). Extracts sitemap URLs.",
-          "",
-          "**Tiers:** OPEN / SELECTIVE / BLOCKED_AI / BLOCKED_ALL / NO_ROBOTS_TXT",
-          "**Payment:** 0.002 USDC per call via x402 (Base Mainnet).",
-          "**Caching:** 12 hours per domain.",
-          "**Use case:** Crawler agents that need to respect site policies before fetching.",
-        ].join("\n"),
-        tags: ["Trust"],
-        parameters: [
-          { name: "domain", in: "query", required: false,
-            schema: { type: "string", maxLength: 253, example: "example.com" } },
-          { name: "url", in: "query", required: false,
-            schema: { type: "string", example: "https://example.com" } },
-        ],
-        responses: {
-          "200": { description: "robots.txt analyzed",
-            content: { "application/json": { schema: { $ref: "#/components/schemas/RobotsResponse" } } },
+          "400": { description: "Invalid or missing domain parameter" },
+          "402": {
+            description: "Payment required — 0.002 USDC via x402",
+            headers: {
+              "PAYMENT-REQUIRED": {
+                description: "Base64-encoded JSON payment requirements",
+                schema:      { type: "string" },
+              },
+            },
           },
-          "400": { description: "Invalid domain or unsupported scheme/port" },
-          "402": { description: "Payment required — pay 0.002 USDC via x402" },
           "429": { description: "Rate limit exceeded" },
-          "502": { description: "Could not fetch robots.txt" },
+          "502": { description: "TLS handshake failed (timeout, no cert, connection refused)" },
         },
       },
     },
   },
-
-  // ─── Schemas ───────────────────────────────────────────────────────────────
-
   components: {
     schemas: {
-      ApiInfo: {
-        type: "object",
-        properties: {
-          name:        { type: "string", example: "TrustSource API" },
-          description: { type: "string" },
-          version:     { type: "string", example: "0.3.0" },
-          endpoints:   { type: "object" },
-          payment:     { type: "object" },
-          links:       { type: "object" },
-        },
-      },
-
       TrustScoreResponse: {
         type:     "object",
         required: ["domain", "score", "maxScore", "tier", "breakdown", "details", "meta"],
         properties: {
-          domain:   { type: "string" },
-          score:    { type: "integer", description: "0–100" },
-          maxScore: { type: "integer", example: 100 },
+          domain:   { type: "string",  description: "The domain that was scored",     example: "google.com" },
+          score:    { type: "integer", description: "Overall trust score (0–100)",     example: 90 },
+          maxScore: { type: "integer", description: "Maximum possible score",          example: 100 },
           tier: {
-            type: "string",
-            enum: ["TRUSTED", "MODERATE", "CAUTION", "HIGH_RISK"],
+            type:        "string",
+            enum:        ["TRUSTED", "MODERATE", "CAUTION", "HIGH_RISK"],
+            description: "Risk tier derived from score. TRUSTED=75+, MODERATE=50–74, CAUTION=25–49, HIGH_RISK=0–24",
+            example:     "TRUSTED",
           },
           breakdown: {
-            type: "object",
+            type:        "object",
+            description: "Score contribution from each signal (all values sum to score)",
             properties: {
-              domainAge:   { type: "integer", description: "0–30" },
-              tld:         { type: "integer", description: "0–20" },
-              dnsPresence: { type: "integer", description: "0–30" },
-              registrar:   { type: "integer", description: "10–20" },
+              domainAge:   { type: "integer", description: "Domain age score (0–30)",   example: 30 },
+              tld:         { type: "integer", description: "TLD risk score (0–20)",     example: 20 },
+              dnsPresence: { type: "integer", description: "DNS presence score (0–30)", example: 30 },
+              registrar:   { type: "integer", description: "Registrar score (10–20)",   example: 10 },
             },
           },
           details: {
             type: "object",
             properties: {
-              age:       { type: "object" },
-              tld:       { type: "string" },
-              dns:       { type: "object" },
-              registrar: { type: "string" },
+              age: {
+                type: "object",
+                properties: {
+                  days:    { type: "integer", description: "Domain age in days (-1 if unknown)", example: 10477 },
+                  label:   { type: "string",  description: "Human-readable age label",           example: "established (5+ years)" },
+                  created: { type: ["string", "null"], description: "Creation date from WHOIS",  example: "1997-09-15T07:00:00+0000" },
+                  expires: { type: ["string", "null"], description: "Expiry date from WHOIS",    example: null },
+                },
+              },
+              tld: { type: "string", description: "Top-level domain", example: ".com" },
+              dns: {
+                type: "object",
+                properties: {
+                  hasARecord:  { type: "boolean", description: "Domain resolves to an IP",    example: true },
+                  hasMxRecord: { type: "boolean", description: "Domain has email (MX record)", example: true },
+                  mxRecords:   { type: "array",   items: { type: "string" },                   example: ["smtp.google.com"] },
+                },
+              },
+              registrar: { type: "string", description: "Domain registrar name from WHOIS", example: "markmonitor, inc." },
             },
           },
-          meta: { $ref: "#/components/schemas/Meta" },
+          meta: {
+            type: "object",
+            properties: {
+              checkedAt:  { type: "string", format: "date-time", description: "ISO8601 timestamp of the check" },
+              apiVersion: { type: "string", description: "API version", example: "1.0" },
+              paidWith:   { type: "string", description: "Payment method", example: "x402/USDC" },
+              cached:     { type: "boolean", description: "True if result was served from 1-hour cache", example: false },
+            },
+          },
         },
       },
-
       SslCheckResponse: {
         type:     "object",
         required: ["domain", "score", "maxScore", "tier", "breakdown", "certificate", "chain", "connection", "meta"],
         properties: {
-          domain:    { type: "string" },
-          score:     { type: "integer" },
-          maxScore:  { type: "integer", example: 100 },
+          domain:   { type: "string",  example: "google.com" },
+          score:    { type: "integer", example: 100 },
+          maxScore: { type: "integer", example: 100 },
           tier: {
             type: "string",
             enum: ["VALID", "WEAK", "EXPIRING", "EXPIRED", "UNTRUSTED", "INVALID"],
+            description: "Risk tier based on certificate state and score",
           },
           breakdown: {
             type: "object",
             properties: {
-              chainValid:   { type: "integer" },
-              trustedCa:    { type: "integer" },
-              notExpired:   { type: "integer" },
-              strongCrypto: { type: "integer" },
-              modernTls:    { type: "integer" },
+              chainValid:   { type: "integer", description: "Certificate chain validity (0–30)" },
+              trustedCa:    { type: "integer", description: "Trusted root CA (0–25)" },
+              notExpired:   { type: "integer", description: "Expiry margin (0–25)" },
+              strongCrypto: { type: "integer", description: "Signature strength (0–10)" },
+              modernTls:    { type: "integer", description: "TLS protocol version (0–10)" },
             },
           },
-          warnings:    { type: "array", items: { type: "string" } },
+          warnings: { type: "array", items: { type: "string" }, example: [] },
           certificate: {
             type: "object",
             properties: {
-              subject:        { type: "string" },
-              issuer:         { type: "string" },
-              validFrom:      { type: ["string", "null"], format: "date-time" },
-              validTo:        { type: ["string", "null"], format: "date-time" },
-              daysRemaining:  { type: ["integer", "null"] },
-              san:            { type: "array", items: { type: "string" } },
-              fingerprint256: { type: "string" },
-              serialNumber:   { type: "string" },
-              isSelfSigned:   { type: "boolean" },
+              subject:            { type: "string", example: "*.google.com" },
+              issuer:             { type: "string", example: "Google Trust Services" },
+              validFrom:          { type: "string", format: "date-time" },
+              validTo:            { type: "string", format: "date-time" },
+              daysRemaining:      { type: "integer", example: 67 },
+              signatureAlgorithm: { type: "string", example: "RSA-SHA256" },
+              san:                { type: "array", items: { type: "string" } },
+              fingerprint256:     { type: "string" },
+              serialNumber:       { type: "string" },
+              isSelfSigned:       { type: "boolean" },
             },
           },
           chain: {
             type: "object",
             properties: {
-              depth:   { type: "integer" },
+              depth:   { type: "integer", example: 3 },
               valid:   { type: "boolean" },
               trusted: { type: "boolean" },
               rootCa:  { type: ["string", "null"] },
@@ -320,159 +375,44 @@ const spec = {
               authError:  { type: ["string", "null"] },
             },
           },
-          meta: { $ref: "#/components/schemas/Meta" },
-        },
-      },
-
-      HeadersResponse: {
-        type:     "object",
-        required: ["url", "grade", "score", "maxScore", "analysis", "warnings", "meta"],
-        properties: {
-          url:      { type: "string", format: "uri" },
-          hostname: { type: "string" },
-          grade: {
-            type: "string",
-            enum: ["A+", "A", "B", "C", "D", "F"],
-          },
-          score:    { type: "integer", description: "0–100" },
-          maxScore: { type: "integer", example: 100 },
-          analysis: {
+          meta: {
             type: "object",
             properties: {
-              hsts:                { $ref: "#/components/schemas/HeaderAnalysis" },
-              csp:                 { $ref: "#/components/schemas/HeaderAnalysis" },
-              xFrameOptions:       { $ref: "#/components/schemas/HeaderAnalysis" },
-              xContentTypeOptions: { $ref: "#/components/schemas/HeaderAnalysis" },
-              referrerPolicy:      { $ref: "#/components/schemas/HeaderAnalysis" },
-              permissionsPolicy:   { $ref: "#/components/schemas/HeaderAnalysis" },
-              coop:                { $ref: "#/components/schemas/HeaderAnalysis" },
-              serverDisclosure:    { $ref: "#/components/schemas/HeaderAnalysis" },
-            },
-          },
-          warnings: { type: "array", items: { type: "string" } },
-          response: {
-            type: "object",
-            properties: {
-              status:    { type: "integer" },
-              redirects: { type: "integer" },
-            },
-          },
-          meta: { $ref: "#/components/schemas/Meta" },
-        },
-      },
-
-      HeaderAnalysis: {
-        type: "object",
-        properties: {
-          present:  { type: "boolean" },
-          value:    { type: ["string", "null"] },
-          score:    { type: "integer" },
-          maxScore: { type: "integer" },
-          notes:    { type: "array", items: { type: "string" } },
-        },
-      },
-
-      RobotsResponse: {
-        type:     "object",
-        required: ["domain", "exists", "tier", "aiFriendly", "meta"],
-        properties: {
-          domain: { type: "string" },
-          exists: { type: "boolean", description: "Whether robots.txt was found" },
-          tier: {
-            type: "string",
-            enum: ["OPEN", "SELECTIVE", "BLOCKED_AI", "BLOCKED_ALL", "NO_ROBOTS_TXT"],
-            description: "Overall classification of crawl posture",
-          },
-          aiFriendly: { type: "boolean" },
-          summary: {
-            type: ["object", "null"],
-            properties: {
-              userAgentGroups: { type: "integer" },
-              sitemaps:        { type: "integer" },
-              rawLines:        { type: "integer" },
-              truncated:       { type: "boolean", description: "True if robots.txt exceeded 100KB cap" },
-              hasParseErrors:  { type: "boolean" },
-            },
-          },
-          ai: {
-            type: ["object", "null"],
-            properties: {
-              globalBlock:        { type: "boolean" },
-              globalAllow:        { type: "boolean" },
-              knownBotsChecked:   { type: "integer" },
-              knownBotsBlocked:   { type: "integer" },
-              knownBotsPartial:   { type: "integer" },
-              policies: {
-                type: "array",
-                items: { $ref: "#/components/schemas/AiBotPolicy" },
-              },
-            },
-          },
-          sitemaps:   { type: "array", items: { type: "string", format: "uri" } },
-          userAgents: {
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                userAgent:  { type: "string" },
-                allow:      { type: "array", items: { type: "string" } },
-                disallow:   { type: "array", items: { type: "string" } },
-                crawlDelay: { type: ["number", "null"] },
-              },
-            },
-          },
-          response: {
-            type: "object",
-            properties: { status: { type: "integer" } },
-          },
-          meta: { $ref: "#/components/schemas/Meta" },
-        },
-      },
-
-      AiBotPolicy: {
-        type: "object",
-        properties: {
-          bot:     { type: "string", example: "GPTBot" },
-          blocked: { type: "boolean" },
-          partial: { type: "boolean" },
-          rules: {
-            type: "object",
-            properties: {
-              allow:    { type: "array", items: { type: "string" } },
-              disallow: { type: "array", items: { type: "string" } },
+              checkedAt:  { type: "string", format: "date-time" },
+              apiVersion: { type: "string" },
+              paidWith:   { type: "string", example: "x402/USDC" },
+              cached:     { type: "boolean" },
             },
           },
         },
       },
-
-      Meta: {
-        type: "object",
-        properties: {
-          checkedAt:  { type: "string", format: "date-time" },
-          apiVersion: { type: "string", example: "1.0" },
-          paidWith:   { type: "string", example: "x402/USDC" },
-          cached:     { type: "boolean" },
-        },
-      },
-
       ErrorResponse: {
+        type:       "object",
+        properties: {
+          error:   { type: "string", example: "Invalid domain" },
+          message: { type: "string", example: "Must be a valid public domain (e.g. example.com)" },
+        },
+      },
+      ApiInfo: {
         type: "object",
         properties: {
-          error:   { type: "string" },
-          message: { type: "string" },
+          name:        { type: "string", example: "AgentBrain API" },
+          description: { type: "string" },
+          version:     { type: "string", example: "0.1.0" },
+          endpoints:   { type: "object" },
+          payment:     { type: "object" },
+          links:       { type: "object" },
         },
       },
     },
-
     securitySchemes: {
       x402: {
         type:        "http",
         scheme:      "x402",
-        description: "Pay-per-use via x402 protocol. On 402, read PAYMENT-REQUIRED header, sign USDC transfer on Base Mainnet, retry with X-PAYMENT header.",
+        description: "Pay-per-use via x402 protocol. On a 402 response, read the PAYMENT-REQUIRED header, sign a USDC transfer on Base Mainnet, and retry with the X-PAYMENT header.",
       },
     },
   },
-
   "x-x402": {
     protocol:    "x402",
     version:     "2",

@@ -1,6 +1,6 @@
 {
-  "name": "agentbrain",
-  "version": "0.1.0",
+  "name": "trustsource",
+  "version": "0.2.0",
   "description": "x402-powered intelligence APIs for AI agents",
   "type": "module",
   "scripts": {

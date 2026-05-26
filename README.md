@@ -1,4 +1,4 @@
-# AgentBrain API
+# Trustsource API
 
 x402-powered intelligence APIs for AI agents. Pay per use, no API keys, no accounts.
 

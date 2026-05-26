@@ -53,6 +53,8 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+app.set("trust proxy", 1);
+
 const limiter = rateLimit({
   windowMs: 60 * 1000,
   max: 60,
@@ -63,6 +65,10 @@ const limiter = rateLimit({
            (req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim() ||
            req.ip ||
            "unknown";
+  },
+  validate: {
+    trustProxy: false,                  // we set it intentionally to 1
+    keyGeneratorIpFallback: false,      // we use our own IP detection
   },
 });
 

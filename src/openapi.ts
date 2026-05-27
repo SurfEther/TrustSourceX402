@@ -7,7 +7,7 @@ const spec = {
   info: {
     title:       "TrustSource API",
     version:     "1.0.0",
-    description: "x402-powered domain trust and safety scoring API for AI agents. Returns structured trust intelligence on any domain — no API keys, no accounts. Pay per use with USDC via the x402 protocol.",
+    description: "x402-powered domain, SSL, security, and crawler-policy intelligence for AI agents. Four endpoints return structured trust intelligence on any domain — no API keys, no accounts. Pay per use with USDC via the x402 protocol on Base Mainnet.",
     contact: {
       url: "https://trustsource.cc",
     },
@@ -18,8 +18,8 @@ const spec = {
   },
   servers: [
     {
-      url:         "https://trustsource.cc",
-      description: "Production (Base Mainnet)",
+      url:         "https://api.trustsource.cc",
+      description: "Production (Base Mainnet) — DNS-only, x402-aware",
     },
   ],
   paths: {
@@ -209,13 +209,12 @@ const spec = {
         security:    [{ x402: [] }],
         summary:     "SSL/TLS certificate intelligence",
         description: [
-          "Returns a 0–100 SSL/TLS score for any domain.",
-          "Performs a live TLS handshake and analyzes the certificate chain,",
-          "expiry, signature algorithm, trust anchor, and protocol version.",
+          "Live TLS handshake to the target domain. Returns 0–100 SSL score, certificate",
+          "chain details, expiry, trusted CA detection, TLS protocol version, cipher quality,",
+          "and security warnings.",
           "",
           "**Payment:** 0.002 USDC per call via x402 protocol (Base Mainnet).",
-          "",
-          "**Caching:** Results cached for 6 hours per domain (certificates change rarely).",
+          "**Caching:** Results are cached for 1 hour per domain.",
         ].join("\n"),
         tags: ["Trust"],
         parameters: [
@@ -255,6 +254,104 @@ const spec = {
           },
           "429": { description: "Rate limit exceeded" },
           "502": { description: "TLS handshake failed (timeout, no cert, connection refused)" },
+        },
+      },
+    },
+    "/headers": {
+      get: {
+        operationId: "getSecurityHeaders",
+        security:    [{ x402: [] }],
+        summary:     "HTTP security header audit",
+        description: [
+          "Fetches the target URL and audits HTTP security headers (HSTS, CSP, X-Frame-Options,",
+          "X-Content-Type-Options, Referrer-Policy, Permissions-Policy, Cross-Origin-*). Returns",
+          "a defense-in-depth letter grade A+ through F with per-header analysis and notes.",
+          "",
+          "**Note:** This is a hardening signal, not an active vulnerability scan. Many",
+          "legitimate marketing sites grade F.",
+          "",
+          "**Payment:** 0.003 USDC per call via x402 protocol (Base Mainnet).",
+          "**Caching:** Results cached up to 12 hours per URL.",
+        ].join("\n"),
+        tags: ["Trust"],
+        parameters: [
+          {
+            name:        "url",
+            in:          "query",
+            description: "Full URL to audit (e.g. https://example.com)",
+            required:    true,
+            schema:      { type: "string", maxLength: 2048, example: "https://example.com" },
+          },
+        ],
+        responses: {
+          "200": {
+            description: "Header audit completed",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/HeadersResponse" },
+              },
+            },
+          },
+          "400": { description: "Invalid or missing url parameter" },
+          "402": {
+            description: "Payment required — 0.003 USDC via x402",
+            headers: {
+              "PAYMENT-REQUIRED": {
+                description: "Base64-encoded JSON payment requirements",
+                schema:      { type: "string" },
+              },
+            },
+          },
+          "429": { description: "Rate limit exceeded" },
+          "502": { description: "Fetch failed — target unreachable, blocked, or returned no usable response" },
+        },
+      },
+    },
+    "/robots": {
+      get: {
+        operationId: "getRobots",
+        security:    [{ x402: [] }],
+        summary:     "robots.txt + AI bot policy detection",
+        description: [
+          "Fetches and parses the target domain's robots.txt and detects policies across",
+          "24 known AI crawlers (GPTBot, ClaudeBot, PerplexityBot, Google-Extended, CCBot,",
+          "Bytespider, and more). Returns parsed rules, sitemap URLs, and an AI-friendliness",
+          "tier (OPEN / SELECTIVE / BLOCKED_AI / BLOCKED_ALL / NO_ROBOTS_TXT).",
+          "",
+          "**Payment:** 0.002 USDC per call via x402 protocol (Base Mainnet).",
+          "**Caching:** Results cached up to 12 hours per domain.",
+        ].join("\n"),
+        tags: ["Trust"],
+        parameters: [
+          {
+            name:        "domain",
+            in:          "query",
+            description: "Domain name (e.g. example.com)",
+            required:    true,
+            schema:      { type: "string", maxLength: 253, example: "example.com" },
+          },
+        ],
+        responses: {
+          "200": {
+            description: "robots.txt analysis completed",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/RobotsResponse" },
+              },
+            },
+          },
+          "400": { description: "Invalid or missing domain parameter" },
+          "402": {
+            description: "Payment required — 0.002 USDC via x402",
+            headers: {
+              "PAYMENT-REQUIRED": {
+                description: "Base64-encoded JSON payment requirements",
+                schema:      { type: "string" },
+              },
+            },
+          },
+          "429": { description: "Rate limit exceeded" },
+          "502": { description: "robots.txt fetch failed" },
         },
       },
     },
@@ -386,6 +483,139 @@ const spec = {
           },
         },
       },
+      HeadersResponse: {
+        type:     "object",
+        required: ["url", "hostname", "grade", "score", "maxScore", "analysis", "warnings", "response", "meta"],
+        properties: {
+          url:      { type: "string", description: "The final URL after redirects", example: "https://example.com/" },
+          hostname: { type: "string", description: "Hostname extracted from the URL", example: "example.com" },
+          grade: {
+            type:        "string",
+            enum:        ["A+", "A", "B", "C", "D", "F"],
+            description: "Defense-in-depth letter grade. A+/A = enterprise-hardened, B = decent, C/D = legacy, F = unhardened.",
+            example:     "A",
+          },
+          score:    { type: "integer", description: "Numeric score backing the grade",   example: 82 },
+          maxScore: { type: "integer", description: "Maximum possible score",             example: 100 },
+          analysis: {
+            type:        "object",
+            description: "Per-header analysis. Each header is keyed by its lower-case name.",
+            additionalProperties: { $ref: "#/components/schemas/HeaderAnalysis" },
+            example: {
+              "strict-transport-security": {
+                present:  true,
+                value:    "max-age=31536000; includeSubDomains",
+                score:    20,
+                maxScore: 20,
+                notes:    ["HSTS enabled with 1-year max-age and subdomain coverage"],
+              },
+            },
+          },
+          warnings: {
+            type:        "array",
+            items:       { type: "string" },
+            description: "Human-readable issues flagged during the audit",
+            example:     ["Server header reveals nginx version"],
+          },
+          response: {
+            type: "object",
+            properties: {
+              status:    { type: "integer", description: "Final HTTP status code", example: 200 },
+              redirects: { type: "integer", description: "Number of redirects followed", example: 1 },
+            },
+          },
+          meta: {
+            type: "object",
+            properties: {
+              checkedAt:  { type: "string", format: "date-time" },
+              apiVersion: { type: "string" },
+              paidWith:   { type: "string", example: "x402/USDC" },
+              cached:     { type: "boolean" },
+            },
+          },
+        },
+      },
+      HeaderAnalysis: {
+        type:     "object",
+        required: ["present", "value", "score", "maxScore", "notes"],
+        properties: {
+          present:  { type: "boolean", description: "True if the header is present in the response" },
+          value:    { type: ["string", "null"], description: "Raw header value or null if absent" },
+          score:    { type: "integer", description: "Points awarded for this header's configuration" },
+          maxScore: { type: "integer", description: "Maximum points this header could contribute" },
+          notes:    { type: "array", items: { type: "string" }, description: "Human-readable observations" },
+        },
+      },
+      RobotsResponse: {
+        type:     "object",
+        required: ["domain", "exists", "tier", "aiFriendly", "meta"],
+        properties: {
+          domain: { type: "string", example: "example.com" },
+          exists: { type: "boolean", description: "True if a robots.txt file was found", example: true },
+          tier: {
+            type: "string",
+            enum: ["OPEN", "SELECTIVE", "BLOCKED_AI", "BLOCKED_ALL", "NO_ROBOTS_TXT"],
+            description: "Classification of overall crawler policy",
+          },
+          aiFriendly: {
+            type:        "boolean",
+            description: "True if AI training crawlers are not broadly blocked",
+            example:     true,
+          },
+          summary: {
+            type: ["object", "null"],
+            properties: {
+              userAgentGroups: { type: "integer", description: "Number of User-agent groups parsed", example: 3 },
+              sitemaps:        { type: "integer", description: "Number of Sitemap declarations",      example: 1 },
+              rawLines:        { type: "integer", description: "Total non-empty lines parsed",         example: 42 },
+              truncated:       { type: "boolean", description: "True if response exceeded 100KB body cap" },
+              hasParseErrors:  { type: "boolean", description: "True if any directive failed to parse" },
+            },
+          },
+          ai: {
+            type: ["object", "null"],
+            description: "Per-AI-bot policy analysis across 24 known crawlers",
+            properties: {
+              globalBlock:      { type: "boolean", description: "True if User-agent: * Disallow: / is present" },
+              globalAllow:      { type: "boolean", description: "True if User-agent: * Allow: / is present" },
+              knownBotsChecked: { type: "integer", description: "Count of AI bots evaluated (currently 24)", example: 24 },
+              knownBotsBlocked: { type: "integer", description: "Bots with full disallow rules",             example: 5 },
+              knownBotsPartial: { type: "integer", description: "Bots with partial disallow rules",          example: 2 },
+              policies: {
+                type:        "array",
+                description: "Per-bot policy details",
+                items: {
+                  type: "object",
+                  properties: {
+                    userAgent: { type: "string", example: "GPTBot" },
+                    blocked:   { type: "boolean" },
+                    partial:   { type: "boolean" },
+                    disallow:  { type: "array", items: { type: "string" } },
+                    allow:     { type: "array", items: { type: "string" } },
+                  },
+                },
+              },
+            },
+          },
+          sitemaps:   { type: "array", items: { type: "string" }, example: ["https://example.com/sitemap.xml"] },
+          userAgents: { type: "array", items: { type: "string" }, example: ["*", "GPTBot", "Googlebot"] },
+          response: {
+            type: "object",
+            properties: {
+              status: { type: "integer", description: "HTTP status of the robots.txt fetch", example: 200 },
+            },
+          },
+          meta: {
+            type: "object",
+            properties: {
+              checkedAt:  { type: "string", format: "date-time" },
+              apiVersion: { type: "string" },
+              paidWith:   { type: "string", example: "x402/USDC" },
+              cached:     { type: "boolean" },
+            },
+          },
+        },
+      },
       ErrorResponse: {
         type:       "object",
         properties: {
@@ -396,9 +626,9 @@ const spec = {
       ApiInfo: {
         type: "object",
         properties: {
-          name:        { type: "string", example: "AgentBrain API" },
+          name:        { type: "string", example: "TrustSource API" },
           description: { type: "string" },
-          version:     { type: "string", example: "0.1.0" },
+          version:     { type: "string", example: "0.3.0" },
           endpoints:   { type: "object" },
           payment:     { type: "object" },
           links:       { type: "object" },

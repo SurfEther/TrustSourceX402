@@ -1,0 +1,45 @@
+startCommand:
+  type: stdio
+  configSchema:
+    type: object
+    required:
+      - walletPrivateKey
+    properties:
+      walletPrivateKey:
+        type: string
+        title: Wallet Private Key
+        description: >-
+          Base Mainnet wallet private key that holds USDC (for per-call fees) and
+          a small amount of ETH (for gas). Each TrustSource API call costs
+          $0.002–$0.003 USDC, settled atomically on Base via the x402 protocol.
+        format: password
+      apiUrl:
+        type: string
+        title: TrustSource API URL
+        description: Override the TrustSource API base URL. Leave default unless self-hosting.
+        default: https://api.trustsource.cc
+  commandFunction: |-
+    (config) => ({
+      command: 'npx',
+      args: ['-y', 'trustsource-mcp'],
+      env: {
+        WALLET_PRIVATE_KEY: config.walletPrivateKey,
+        TRUSTSOURCE_API_URL: config.apiUrl || 'https://api.trustsource.cc'
+      }
+    })
+build:
+  dockerfile: ../Dockerfile
+metadata:
+  name: TrustSource
+  description: >-
+    Four x402-paid domain verification tools for AI agents — trust scoring,
+    SSL/TLS certificate intelligence, HTTP security header audit, and
+    robots.txt + AI bot policy detection. Pays per call in USDC on Base
+    Mainnet. No API keys, no signups.
+  homepage: https://trustsource.cc
+  license: MIT
+  categories:
+    - security
+    - web
+    - verification
+    - x402

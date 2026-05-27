@@ -1,0 +1,58 @@
+{
+  "name": "trustsource-mcp",
+  "version": "0.1.0",
+  "description": "MCP server exposing TrustSource x402-paid domain verification APIs (trust score, SSL check, security headers, robots.txt) to any MCP-compatible client.",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "trustsource-mcp": "dist/index.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    ".env.example",
+    "smithery.yaml"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "tsx watch src/index.ts",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "x402",
+    "trustsource",
+    "domain-verification",
+    "ssl",
+    "trust-score",
+    "ai-agents",
+    "agentic-payments",
+    "base-mainnet",
+    "usdc"
+  ],
+  "author": "TrustSource <hello@trustsource.cc>",
+  "license": "MIT",
+  "homepage": "https://trustsource.cc",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/REPLACE_WITH_GH_USER/trustsource.git",
+    "directory": "mcp-server"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "@x402/fetch": "^2.13.0",
+    "viem": "^2.50.4",
+    "zod": "^3.23.0",
+    "dotenv": "^16.4.5"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "tsx": "^4.15.1",
+    "typescript": "^5.4.5"
+  }
+}

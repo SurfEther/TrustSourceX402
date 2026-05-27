@@ -28,6 +28,8 @@ const NETWORK     = (process.env.NETWORK || "eip155:84532") as `${string}:${stri
 const FACILITATOR = process.env.FACILITATOR_URL || "https://x402.org/facilitator";
 const IS_MAINNET  = NETWORK === "eip155:8453";
 
+const PAID_PATHS = new Set(["/trustscore", "/sslcheck", "/headers", "/robots"]);
+
 if (!PAY_TO || !PAY_TO.startsWith("0x")) {
   console.error("❌  PAY_TO_ADDRESS is missing or invalid in .env");
   process.exit(1);
@@ -91,6 +93,39 @@ app.use((_req, res, next) => {
     }
     return originalJson(body);
   };
+  next();
+});
+
+// ─── Settlement observability ────────────────────────────────────────────────
+// Emits a structured JSON log on every request to a paid route, with the final
+// status code so you can distinguish 402-issued from 200-settled. Greppable in
+// Railway logs:
+//   { "evt": "request" ... "status": 200 }  ← successful settlement
+//   { "evt": "request" ... "status": 402 }  ← 402 issued, client never retried
+//   { "evt": "request" ... "status": 429 }  ← rate-limited
+// Filter your own test IPs with:  grep -v '"ip":"YOUR_TEST_IP"'
+app.use((req, res, next) => {
+  if (!PAID_PATHS.has(req.path)) return next();
+  const startedAt = Date.now();
+  res.on("finish", () => {
+    const ip =
+      (req.headers["cf-connecting-ip"] as string) ||
+      (req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim() ||
+      req.ip ||
+      "unknown";
+    const log = {
+      evt:       "request",
+      path:      req.path,
+      query:     req.query,
+      status:    res.statusCode,
+      settled:   res.statusCode === 200,
+      ip,
+      ua:        (req.headers["user-agent"] as string)?.slice(0, 120) ?? null,
+      durationMs: Date.now() - startedAt,
+      ts:        new Date().toISOString(),
+    };
+    console.log(JSON.stringify(log));
+  });
   next();
 });
 

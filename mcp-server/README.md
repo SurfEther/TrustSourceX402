@@ -4,6 +4,8 @@ MCP server exposing the [TrustSource](https://trustsource.cc) suite of x402-paid
 
 Four tools, each settled per-call in USDC on Base Mainnet. No API keys, no signups, no accounts — just a wallet.
 
+These tools are also discoverable to autonomous agents via Coinbase's Bazaar marketplace, where AI agents browse, pay for, and call x402-enabled services.
+
 ## Tools
 
 | Tool | Cost | What it does |
@@ -28,8 +30,11 @@ npx -y trustsource-mcp
 ## Configure
 
 The server needs a Base Mainnet wallet private key. The wallet must hold:
-- A few cents of USDC (for paying per-call fees)
-- A small amount of ETH (for gas)
+
+USDC for per-call fees ($0.002–$0.003 per call)
+ETH for gas (minimal — Base Mainnet gas is fractions of a cent per call)
+
+Suggested starter balance: $1 USDC + 0.0005 ETH on Base Mainnet covers ~300 calls. Bridge via bridge.base.org or buy directly to a Base wallet via Coinbase.
 
 Set the private key in your MCP client's environment, **not** in any committed file.
 
@@ -98,7 +103,7 @@ Worst-case full domain audit: `trustsource_score` + `trustsource_ssl` + `trustso
 
 ```bash
 git clone https://github.com/SurfEther/TrustSourceX402.git
-cd trustsource/mcp-server
+cd TrustSourceX402/mcp-server
 npm install
 npm run build
 npm start

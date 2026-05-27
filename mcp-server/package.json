@@ -1,6 +1,6 @@
 {
   "name": "trustsource-mcp",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "MCP server exposing TrustSource x402-paid domain verification APIs (trust score, SSL check, security headers, robots.txt) to any MCP-compatible client.",
   "type": "module",
   "main": "dist/index.js",
@@ -45,10 +45,11 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0",
+    "@x402/evm": "^2.13.0",
     "@x402/fetch": "^2.13.0",
+    "dotenv": "^16.4.5",
     "viem": "^2.50.4",
-    "zod": "^3.23.0",
-    "dotenv": "^16.4.5"
+    "zod": "^3.23.0"
   },
   "devDependencies": {
     "@types/node": "^20.14.0",

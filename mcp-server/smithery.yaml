@@ -9,15 +9,19 @@ startCommand:
         type: string
         title: Wallet Private Key
         description: >-
-          Base Mainnet wallet private key that holds USDC (for per-call fees) and
-          a small amount of ETH (for gas). Each TrustSource API call costs
+          Base Mainnet wallet private key that holds USDC (for per-call fees)
+          and a small amount of ETH (for gas). Each TrustSource API call costs
           $0.002–$0.003 USDC, settled atomically on Base via the x402 protocol.
+          Suggested starter balance: $1 USDC + 0.0005 ETH covers ~300 calls.
         format: password
       apiUrl:
         type: string
         title: TrustSource API URL
         description: Override the TrustSource API base URL. Leave default unless self-hosting.
         default: https://api.trustsource.cc
+  exampleConfig:
+    walletPrivateKey: "0x0000000000000000000000000000000000000000000000000000000000000000"
+    apiUrl: "https://api.trustsource.cc"
   commandFunction: |-
     (config) => ({
       command: 'npx',
@@ -27,8 +31,6 @@ startCommand:
         TRUSTSOURCE_API_URL: config.apiUrl || 'https://api.trustsource.cc'
       }
     })
-build:
-  dockerfile: ../Dockerfile
 metadata:
   name: TrustSource
   description: >-

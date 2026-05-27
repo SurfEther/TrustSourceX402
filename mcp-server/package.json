@@ -37,7 +37,7 @@
   "homepage": "https://trustsource.cc",
   "repository": {
     "type": "git",
-    "url": "https://github.com/REPLACE_WITH_GH_USER/trustsource.git",
+    "url": "https://github.com/SurfEther/TrustSourceX402.git",
     "directory": "mcp-server"
   },
   "engines": {

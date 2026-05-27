@@ -97,7 +97,7 @@ Worst-case full domain audit: `trustsource_score` + `trustsource_ssl` + `trustso
 ## Build from source
 
 ```bash
-git clone https://github.com/REPLACE_WITH_GH_USER/trustsource.git
+git clone https://github.com/SurfEther/TrustSourceX402.git
 cd trustsource/mcp-server
 npm install
 npm run build

@@ -1,6 +1,7 @@
 ---
 name: trustsource-domain
 description: Verify a domain's trustworthiness, SSL/TLS health, HTTP security posture, and crawler/AI-bot policy before transacting with, scraping, embedding, or recommending it. Use this skill whenever an agent encounters a URL or domain from an untrusted source, needs to assess whether a site is safe to send a payment to, wants to know if a TLS certificate is valid and not expiring, needs to grade a site's security headers, or needs to know whether it has permission to crawl. Pays per query in USDC via the x402 protocol — no API keys, no signups, no accounts. Trigger this skill on any request about checking, verifying, scoring, validating, or auditing a domain, website, URL, TLS certificate, SSL, HTTPS, security headers, robots.txt, or crawler permissions — even when the user does not name TrustSource explicitly.
+license: MIT
 ---
 
 # TrustSource — Domain Verification for Agents

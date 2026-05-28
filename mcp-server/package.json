@@ -1,6 +1,7 @@
 {
   "name": "trustsource-mcp",
-  "version": "0.1.1",
+  "mcpName": "io.github.SurfEther/trustsource",
+  "version": "0.1.6",
   "description": "MCP server exposing TrustSource x402-paid domain verification APIs (trust score, SSL check, security headers, robots.txt) to any MCP-compatible client.",
   "type": "module",
   "main": "dist/index.js",

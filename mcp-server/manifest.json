@@ -1,0 +1,77 @@
+{
+  "manifest_version": "0.2",
+  "name": "trustsource",
+  "display_name": "TrustSource — Domain Verification",
+  "version": "0.1.1",
+  "description": "Four x402-paid domain verification tools for AI agents — trust scoring, SSL certificate intelligence, HTTP security header audit, and robots.txt + AI bot policy detection. Pays per call in USDC on Base Mainnet.",
+  "long_description": "TrustSource exposes four pay-per-call verification APIs over the x402 protocol on Base Mainnet. Each tool settles its own micropayment ($0.002–$0.003 USDC) atomically per call. No API keys, no signups — just a funded Base wallet. Suggested starter balance: $1 USDC + 0.0005 ETH covers ~300 calls. Tools are also discoverable to autonomous agents via Coinbase's Bazaar marketplace at agentic.market.",
+  "author": {
+    "name": "TrustSource <hello@trustsource.cc>",
+    "email": "support@trustsource.cc"
+  },
+  "homepage": "https://trustsource.cc",
+  "documentation": "https://github.com/SurfEther/TrustSourceX402",
+  "support": "https://github.com/SurfEther/TrustSourceX402",
+  "server": {
+    "type": "node",
+    "entry_point": "dist/index.js",
+    "mcp_config": {
+      "command": "node",
+      "args": [
+        "${__dirname}/dist/index.js"
+      ],
+      "env": {
+        "WALLET_PRIVATE_KEY": "${user_config.wallet_private_key}",
+        "TRUSTSOURCE_API_URL": "${user_config.api_url}"
+      }
+    }
+  },
+  "tools": []
+  ,
+  "compatibility": {
+    "platforms": [
+      "darwin",
+      "win32",
+      "linux"
+    ],
+    "runtimes": {
+      "node": ">=18.0.0"
+    }
+  },
+  "user_config": {
+    "wallet_private_key": {
+      "type": "string",
+      "title": "Wallet Private Key",
+      "description": "Base Mainnet wallet private key that holds USDC (per-call fees) and ETH (gas). Suggested starter balance: $1 USDC + 0.0005 ETH covers ~300 calls. Never share this key.",
+      "required": true,
+      "sensitive": true
+    },
+    "api_url": {
+      "type": "string",
+      "title": "TrustSource API URL",
+      "description": "Override the TrustSource API base URL. Leave default unless self-hosting.",
+      "required": false,
+      "sensitive": false,
+      "default": "https://api.trustsource.cc"
+    }
+  },
+  "keywords": [
+    "x402",
+    "mcp",
+    "domain-verification",
+    "ssl",
+    "trust-score",
+    "ai-agents",
+    "agentic-payments",
+    "base-mainnet",
+    "usdc",
+    "security",
+    "robots-txt",
+    "http-headers"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/SurfEther/TrustSourceX402.git"
+  }
+}

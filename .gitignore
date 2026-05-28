@@ -6,4 +6,4 @@ dist/
 security-test.mjs
 test-client.mjs
 .npmrc
-.tgz
+.tgz*.mcpb

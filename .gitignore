@@ -8,3 +8,4 @@ test-client.mjs
 .npmrc
 .tgz*
 .mcpb
+verify-bazaar.mjs

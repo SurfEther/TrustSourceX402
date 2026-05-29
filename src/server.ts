@@ -197,13 +197,13 @@ app.use(
     {
       "GET /trustscore": {
         accepts: [{ scheme: "exact", price: "$0.003", network: NETWORK, payTo: PAY_TO }],
-        description: "Domain trust and safety scoring — returns 0–100 score, tier (TRUSTED/MODERATE/CAUTION/HIGH_RISK), domain age, DNS records, registrar. For agents verifying URLs before transacting.",
+        description: "Verify whether a domain is legitimate and safe before transacting with it. Returns a 0–100 trust score and tier (TRUSTED/MODERATE/CAUTION/HIGH_RISK) derived from WHOIS domain age, TLD risk, DNS presence, and registrar reputation. Use to vet an unfamiliar URL, redirect target, or payment destination before sending USDC or trusting its content.",
         mimeType: "application/json",
         extensions: {
           ...declareDiscoveryExtension({
             input: { domain: "google.com" },
             inputSchema: {
-              properties: { domain: { type: "string", description: "Domain or full URL" } },
+              properties: { domain: { type: "string", description: "Domain name or full URL to score (e.g. example.com or https://example.com/path)." } },
               required: ["domain"],
             },
             output: {
@@ -217,13 +217,13 @@ app.use(
       },
       "GET /sslcheck": {
         accepts: [{ scheme: "exact", price: "$0.002", network: NETWORK, payTo: PAY_TO }],
-        description: "SSL/TLS certificate intelligence — returns 0–100 score, tier (VALID/WEAK/EXPIRING/EXPIRED/UNTRUSTED/INVALID), chain details, expiry, signature, TLS protocol, cipher quality.",
+        description: "Check whether a domain's TLS/SSL certificate is valid, trusted, and not expiring before connecting to it. Performs a live handshake and returns a 0–100 score and tier (VALID/WEAK/EXPIRING/EXPIRED/UNTRUSTED/INVALID) with chain trust, days-to-expiry, signature algorithm, TLS version, and cipher quality. Use before submitting credentials, posting to a webhook, or following a payment link, to catch expired, self-signed, or MITM-risk certificates.",
         mimeType: "application/json",
         extensions: {
           ...declareDiscoveryExtension({
             input: { domain: "google.com" },
             inputSchema: {
-              properties: { domain: { type: "string" } },
+              properties: { domain: { type: "string", description: "Domain to perform a live TLS handshake against (e.g. example.com); port 443 is assumed." } },
               required: ["domain"],
             },
             output: {
@@ -237,13 +237,13 @@ app.use(
       },
       "GET /headers": {
         accepts: [{ scheme: "exact", price: "$0.003", network: NETWORK, payTo: PAY_TO }],
-        description: "HTTP security headers analyzer — returns A+ to F grade with 0–100 score plus structured analysis of HSTS, CSP, X-Frame-Options, X-Content-Type-Options, Referrer-Policy, Permissions-Policy, Cross-Origin-Opener-Policy, server header disclosure. For agents auditing site security posture.",
+        description: "Audit a site's HTTP security headers before embedding, scraping, or trusting it. Returns an A+ to F grade and 0–100 score with structured analysis of HSTS, CSP, X-Frame-Options, X-Content-Type-Options, Referrer-Policy, Permissions-Policy, and Cross-Origin headers, plus server-header disclosure. A defense-in-depth signal for agents reviewing a site's security posture — not a vulnerability scan.",
         mimeType: "application/json",
         extensions: {
           ...declareDiscoveryExtension({
             input: { url: "https://example.com" },
             inputSchema: {
-              properties: { url: { type: "string" } },
+              properties: { url: { type: "string", description: "Full URL including scheme to audit (e.g. https://example.com). Follows up to 3 re-validated redirects." } },
               required: ["url"],
             },
             output: {
@@ -256,13 +256,13 @@ app.use(
       },
       "GET /robots": {
         accepts: [{ scheme: "exact", price: "$0.002", network: NETWORK, payTo: PAY_TO }],
-        description: "robots.txt intelligence — parses crawl rules and detects AI bot policies (GPTBot, ClaudeBot, Google-Extended, PerplexityBot, etc.). Returns tier (OPEN/SELECTIVE/BLOCKED_AI/BLOCKED_ALL/NO_ROBOTS_TXT), per-bot allow/disallow analysis, sitemap URLs. For crawler agents that need to respect site policies.",
+        description: "Check whether a site permits crawling — and whether it blocks AI bots specifically — before scraping, RAG ingestion, archiving, or training-data collection. Parses robots.txt against 24 known AI crawlers (GPTBot, ClaudeBot, Google-Extended, PerplexityBot, CCBot, and others) and returns a tier (OPEN/SELECTIVE/BLOCKED_AI/BLOCKED_ALL/NO_ROBOTS_TXT), per-bot allow/disallow analysis, and sitemap URLs.",
         mimeType: "application/json",
         extensions: {
           ...declareDiscoveryExtension({
             input: { domain: "example.com" },
             inputSchema: {
-              properties: { domain: { type: "string" } },
+              properties: { domain: { type: "string", description: "Domain whose robots.txt to fetch and parse (e.g. example.com); https is tried first, then http." } },
               required: ["domain"],
             },
             output: {

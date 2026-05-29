@@ -256,7 +256,7 @@ app.use(
       },
       "GET /robots": {
         accepts: [{ scheme: "exact", price: "$0.002", network: NETWORK, payTo: PAY_TO }],
-        description: "robots.txt and AI-crawler policy check: tells an agent whether a website permits crawling and whether it blocks AI bots — GPTBot, ClaudeBot, Google-Extended, PerplexityBot, CCBot and 19 others — before scraping, RAG ingestion, training-data collection, or archiving. Returns a tier (OPEN/SELECTIVE/BLOCKED_AI/BLOCKED_ALL/NO_ROBOTS_TXT), per-bot allow/disallow rules, and sitemap URLs.",
+        description: "robots.txt and AI crawler policy check. Tells an agent whether a website permits crawling and whether it blocks AI bots such as GPTBot, ClaudeBot, Google-Extended, PerplexityBot and CCBot, before scraping, RAG ingestion, training data collection or archiving. Parses robots.txt and returns a crawl-policy tier with per-bot allow and disallow rules and sitemap URLs.",
         mimeType: "application/json",
         extensions: {
           ...declareDiscoveryExtension({

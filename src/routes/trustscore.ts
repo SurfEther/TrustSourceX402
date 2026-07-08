@@ -1,6 +1,12 @@
 import { Router, Request, Response } from "express";
 import dns from "dns/promises";
+import net from "net";
 import whois from "whois-json";
+import {
+  VALID_DOMAIN_RE,
+  isPrivateIp,
+  normalizeHostname,
+} from "../lib/net-guard.js";
 
 const router = Router();
 
@@ -9,16 +15,12 @@ const router = Router();
 const TRUSTED_TLDS = new Set([".com", ".org", ".net", ".io", ".dev", ".ai"]);
 const RISKY_TLDS   = new Set([".xyz", ".tk", ".ml", ".ga", ".cf", ".gq", ".top", ".click"]);
 
-// Strict allowlist: letters, digits, hyphens, dots only (no shell chars)
-const VALID_DOMAIN_RE = /^[a-zA-Z0-9][a-zA-Z0-9\-.]{1,251}[a-zA-Z0-9]$/;
-
-// Block private/internal IP ranges — prevents SSRF via WHOIS subprocess
-const PRIVATE_IP_RE = /^(10\.|172\.(1[6-9]|2\d|3[01])\.|192\.168\.|127\.|0\.0\.0\.0)/;
-
-// Established registrars — word-boundary safe substrings
+// Established registrars, matched as whole tokens (see registrarMatches) so bare
+// words like "google"/"amazon" don't false-positive on unrelated names, and
+// "csc" matches without depending on a trailing space.
 const ESTABLISHED_REGISTRARS = [
   "godaddy", "namecheap", "cloudflare", "google", "amazon",
-  "name.com", "network solutions", "markmonitor", "csc ",
+  "name.com", "network solutions", "markmonitor", "csc",
   "tucows", "enom", "dynadot", "porkbun", "gandi",
 ];
 
@@ -51,14 +53,15 @@ function setCached(key: string, data: Record<string, unknown>): void {
 function extractDomain(input: string): string | null {
   try {
     const withProto = input.startsWith("http") ? input : `https://${input}`;
-    const hostname  = new URL(withProto).hostname.replace(/^www\./, "").toLowerCase();
+    const hostname  = normalizeHostname(new URL(withProto).hostname).replace(/^www\./, "");
     if (!hostname) return null;
 
-    // Block private IPs / localhost
-    if (PRIVATE_IP_RE.test(hostname) || hostname === "localhost") return null;
+    // Block private/internal IPs (incl. link-local/metadata and IPv6) + localhost.
+    if (hostname === "localhost" || isPrivateIp(hostname)) return null;
 
-    // Strict character allowlist — prevents command injection into whois subprocess
-    if (!VALID_DOMAIN_RE.test(hostname)) return null;
+    // Strict allowlist — also neutralizes injection into the WHOIS query string.
+    // Accept a public IP literal or a syntactically valid domain name.
+    if (net.isIP(hostname) === 0 && !VALID_DOMAIN_RE.test(hostname)) return null;
 
     return hostname;
   } catch {
@@ -139,6 +142,14 @@ async function getDnsScore(domain: string): Promise<{
   };
 }
 
+// Match a known registrar name as a whole token, not a loose substring:
+// "amazon registrar, inc." matches "amazon", but "amazonia domains" does not.
+// Literal dots (e.g. "name.com") are escaped so they don't act as wildcards.
+function registrarMatches(registrar: string, known: string): boolean {
+  const escaped = known.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return new RegExp(`(^|[^a-z0-9])${escaped}([^a-z0-9]|$)`, "i").test(registrar);
+}
+
 function getRegistrarScore(whoisData: Record<string, string>): {
   score: number;
   registrar: string;
@@ -149,7 +160,7 @@ function getRegistrarScore(whoisData: Record<string, string>): {
     ""
   ).toLowerCase();
 
-  const match = ESTABLISHED_REGISTRARS.some((r) => registrar.includes(r));
+  const match = ESTABLISHED_REGISTRARS.some((r) => registrarMatches(registrar, r));
   return {
     score:     match ? 20 : 10,
     registrar: registrar || "unknown",

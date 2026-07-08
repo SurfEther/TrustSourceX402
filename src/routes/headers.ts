@@ -1,19 +1,17 @@
 import { Router, Request, Response } from "express";
-import dns from "dns/promises";
+import net from "net";
+import {
+  VALID_DOMAIN_RE,
+  assertHostAllowed,
+  assertUrlSchemeAndPort,
+  isPrivateIp,
+  normalizeHostname,
+  BlockedHostError,
+} from "../lib/net-guard.js";
 
 const router = Router();
 
 // ─── Constants ────────────────────────────────────────────────────────────────
-
-const VALID_DOMAIN_RE = /^[a-zA-Z0-9][a-zA-Z0-9\-.]{1,251}[a-zA-Z0-9]$/;
-
-// Private/internal IP ranges (IPv4 + IPv6) — block to prevent SSRF
-const PRIVATE_IPV4_RE = /^(10\.|172\.(1[6-9]|2\d|3[01])\.|192\.168\.|127\.|0\.0\.0\.0|169\.254\.)/;
-const PRIVATE_IPV6_RE = /^(::1|fc00:|fd00:|fe80:)/i;
-
-// Port allowlist — prevents using this API for port scanning of arbitrary services.
-// "" (empty) means default port for scheme (80 for http, 443 for https).
-const ALLOWED_PORTS = new Set(["", "80", "443", "8080", "8443"]);
 
 const FETCH_TIMEOUT_MS = 8000;
 const MAX_REDIRECTS    = 3;
@@ -57,60 +55,34 @@ function parseAndValidateUrl(input: string): ParsedUrl | { error: string } {
     return { error: "Could not parse URL" };
   }
 
-  // Only http/https — block file://, ftp://, javascript:, data:, gopher:, etc.
-  if (url.protocol !== "http:" && url.protocol !== "https:") {
-    return { error: "Only http:// and https:// URLs are supported" };
+  // Only http/https, on an allowed port — blocks file://, gopher://, port scans.
+  try {
+    assertUrlSchemeAndPort(url);
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "URL not permitted" };
   }
 
-  // Port allowlist — block port scanning attempts
-  if (!ALLOWED_PORTS.has(url.port)) {
-    return { error: `Port ${url.port} not permitted (allowed: 80, 443, 8080, 8443)` };
-  }
-
-  const hostname = url.hostname.toLowerCase();
+  // normalizeHostname strips surrounding IPv6 brackets so "[::1]" is classified
+  // as "::1" — the old regex tested "[::1]" verbatim and never matched, letting
+  // IPv6 loopback/ULA/link-local literals through (an SSRF hole).
+  const hostname = normalizeHostname(url.hostname);
 
   if (!hostname) return { error: "Missing hostname" };
   if (hostname === "localhost") return { error: "Localhost not permitted" };
 
-  // Block raw private/internal IPs at parse time (defense in depth — DNS check happens too)
-  if (PRIVATE_IPV4_RE.test(hostname) || PRIVATE_IPV6_RE.test(hostname)) {
+  // Block raw private/internal IP literals at parse time (defense in depth —
+  // safeFetch also resolves the name and re-checks the resulting addresses).
+  if (isPrivateIp(hostname)) {
     return { error: "Private/internal addresses not permitted" };
   }
 
-  // Hostname allowlist for domain names (IPs handled above)
-  const isIp = /^[\d.]+$/.test(hostname) || hostname.includes(":");
+  // Hostname allowlist for domain names (IP literals handled above)
+  const isIp = net.isIP(hostname) !== 0;
   if (!isIp && !VALID_DOMAIN_RE.test(hostname)) {
     return { error: "Invalid hostname" };
   }
 
   return { url, hostname };
-}
-
-// Resolve hostname and ensure it doesn't point at private IPs.
-// Catches DNS-rebinding-style hostnames that resolve to internal addresses.
-//
-// NOTE: This is a TOCTOU-vulnerable check — between this resolution and the
-// fetch's own resolution, DNS records can change. Acceptable risk in Railway's
-// network model where private IPs aren't reachable from app containers.
-async function isHostnameSafe(hostname: string): Promise<boolean> {
-  // Skip DNS check if already a public IP literal
-  if (/^[\d.]+$/.test(hostname) || hostname.includes(":")) {
-    return !PRIVATE_IPV4_RE.test(hostname) && !PRIVATE_IPV6_RE.test(hostname);
-  }
-  try {
-    const addresses = await Promise.race([
-      dns.resolve(hostname),
-      new Promise<string[]>((_, reject) =>
-        setTimeout(() => reject(new Error("DNS timeout")), 3000)
-      ),
-    ]);
-    for (const addr of addresses) {
-      if (PRIVATE_IPV4_RE.test(addr) || PRIVATE_IPV6_RE.test(addr)) return false;
-    }
-    return addresses.length > 0;
-  } catch {
-    return false;
-  }
 }
 
 // ─── Fetch with redirect handling & SSRF re-check on each hop ─────────────────
@@ -127,11 +99,10 @@ async function safeFetch(initialUrl: URL): Promise<FetchResult> {
   let redirects  = 0;
 
   while (redirects <= MAX_REDIRECTS) {
-    // Re-verify each redirect target — prevents redirect-to-internal attacks
-    const safe = await isHostnameSafe(currentUrl.hostname);
-    if (!safe) {
-      throw new Error(`Refused: hostname ${currentUrl.hostname} resolves to a private address`);
-    }
+    // Re-verify scheme, port, and that the host does not resolve to a private
+    // address on EVERY hop — prevents redirect-to-internal / port-scan attacks.
+    assertUrlSchemeAndPort(currentUrl);
+    await assertHostAllowed(currentUrl.hostname);
 
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
@@ -153,20 +124,13 @@ async function safeFetch(initialUrl: URL): Promise<FetchResult> {
       const headers: Record<string, string> = {};
       response.headers.forEach((value, key) => { headers[key.toLowerCase()] = value; });
 
-      // Handle redirect
+      // Handle redirect — scheme/port/host of the next hop are re-validated at
+      // the top of the loop on the following iteration.
       if (response.status >= 300 && response.status < 400 && headers["location"]) {
         try {
           currentUrl = new URL(headers["location"], currentUrl);
         } catch {
           throw new Error("Invalid redirect Location header");
-        }
-
-        // Re-validate scheme + port on each redirect — Location header could be hostile
-        if (currentUrl.protocol !== "http:" && currentUrl.protocol !== "https:") {
-          throw new Error(`Refused redirect to ${currentUrl.protocol} scheme`);
-        }
-        if (!ALLOWED_PORTS.has(currentUrl.port)) {
-          throw new Error(`Refused redirect to port ${currentUrl.port}`);
         }
 
         redirects++;
@@ -224,7 +188,7 @@ function analyzeHsts(value: string | undefined): HeaderAnalysis {
   return { present: true, value, score: Math.min(score, 20), maxScore: 20, notes };
 }
 
-function analyzeCsp(value: string | undefined): HeaderAnalysis {
+export function analyzeCsp(value: string | undefined): HeaderAnalysis {
   if (!value) {
     return { present: false, value: null, score: 0, maxScore: 20, notes: ["missing"] };
   }
@@ -234,7 +198,25 @@ function analyzeCsp(value: string | undefined): HeaderAnalysis {
   // Penalize known weak directives
   if (/unsafe-inline/i.test(value)) { score -= 4; notes.push("uses_unsafe_inline"); }
   if (/unsafe-eval/i.test(value))   { score -= 4; notes.push("uses_unsafe_eval"); }
-  if (/\*/.test(value) && !/strict-dynamic/i.test(value)) {
+
+  // A wildcard is only weak when it is a *source token* in a sensitive fetch
+  // directive (e.g. "default-src *"). The old /\*/ test flagged any asterisk
+  // anywhere — including a scoped "*.cdn.example.com" host or a report-uri —
+  // and wrongly withheld the bonus from legitimate CSPs.
+  const SENSITIVE_DIRECTIVES = new Set([
+    "default-src", "script-src", "script-src-elem", "object-src", "base-uri",
+  ]);
+  let wildcardSource = false;
+  for (const directive of value.split(";")) {
+    const tokens = directive.trim().split(/\s+/);
+    const name   = (tokens.shift() || "").toLowerCase();
+    if (SENSITIVE_DIRECTIVES.has(name) &&
+        tokens.some(t => t === "*" || t === "http:" || t === "https:")) {
+      wildcardSource = true;
+      break;
+    }
+  }
+  if (wildcardSource && !/strict-dynamic/i.test(value)) {
     notes.push("wildcard_source");
   } else {
     score += 5;
@@ -435,7 +417,11 @@ router.get("/headers", async (req: Request, res: Response) => {
     res.json(response);
 
   } catch (err) {
-    const msg = err instanceof Error ? err.message : "Unknown error";
+    // Blocked-host detail (which internal IP a name resolved to) must not reach
+    // the client — it would turn this endpoint into an internal-network oracle.
+    const msg = err instanceof BlockedHostError
+      ? "Target host not permitted"
+      : (err instanceof Error ? err.message : "Unknown error");
     res.status(502).json({
       error:    "Header check failed",
       url:      parsed.url.toString(),

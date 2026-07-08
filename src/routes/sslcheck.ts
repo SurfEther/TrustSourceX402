@@ -1,5 +1,13 @@
 import { Router, Request, Response } from "express";
 import tls from "tls";
+import net from "net";
+import {
+  VALID_DOMAIN_RE,
+  assertHostAllowed,
+  isPrivateIp,
+  normalizeHostname,
+  BlockedHostError,
+} from "../lib/net-guard.js";
 
 const router = Router();
 
@@ -19,11 +27,9 @@ function isValidDate(d: Date): boolean {
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const VALID_DOMAIN_RE = /^[a-zA-Z0-9][a-zA-Z0-9\-.]{1,251}[a-zA-Z0-9]$/;
-const PRIVATE_IP_RE   = /^(10\.|172\.(1[6-9]|2\d|3[01])\.|192\.168\.|127\.|0\.0\.0\.0)/;
-
-// Substrings that match established root certificate authority names.
-// Match is case-insensitive and applied to both root and immediate issuer.
+// Substrings matching well-known root CA names. Used ONLY as a cosmetic
+// "well-known CA" label — the real trust decision comes from Node's own
+// validation against the full system root store (socket.authorized).
 const TRUSTED_CAS = [
   "let's encrypt", "digicert", "globalsign", "sectigo", "comodo",
   "godaddy", "amazon", "google trust", "cloudflare", "entrust",
@@ -31,11 +37,12 @@ const TRUSTED_CAS = [
   "identrust", "actalis", "zerossl",
 ];
 
-// Cipher name fragments indicating weak crypto.
-// Modern HTTPS rarely uses these, but they exist on legacy servers.
-const WEAK_CIPHER_FRAGMENTS = [
-  "rc4", "des", "md5", "null", "export", "3des", "cbc-sha\b",
-];
+// Cipher-name fragments indicating outright-broken crypto (legacy servers only).
+const WEAK_CIPHER_FRAGMENTS = ["rc4", "3des", "des", "md5", "null", "export"];
+
+// Markers of an AEAD cipher (GCM / ChaCha20-Poly1305 / CCM). A modern suite has
+// exactly one of these; a suite with none is a legacy CBC-mode suite.
+const AEAD_MARKERS = ["gcm", "chacha20", "poly1305", "ccm"];
 
 // ─── Cache (6 hour TTL — certs change infrequently) ───────────────────────────
 
@@ -66,10 +73,12 @@ function setCached(key: string, data: Record<string, unknown>): void {
 function extractDomain(input: string): string | null {
   try {
     const withProto = input.startsWith("http") ? input : `https://${input}`;
-    const hostname  = new URL(withProto).hostname.replace(/^www\./, "").toLowerCase();
+    const hostname  = normalizeHostname(new URL(withProto).hostname).replace(/^www\./, "");
     if (!hostname) return null;
-    if (PRIVATE_IP_RE.test(hostname) || hostname === "localhost") return null;
-    if (!VALID_DOMAIN_RE.test(hostname)) return null;
+    if (hostname === "localhost") return null;
+    if (isPrivateIp(hostname)) return null;
+    // Accept public IPv4/IPv6 literals (vetted above) or valid domain names.
+    if (net.isIP(hostname) === 0 && !VALID_DOMAIN_RE.test(hostname)) return null;
     return hostname;
   } catch {
     return null;
@@ -91,10 +100,11 @@ interface CertInfo {
 }
 
 interface ChainInfo {
-  depth:   number;
-  valid:   boolean;
-  trusted: boolean;
-  rootCa:  string | null;
+  depth:       number;
+  valid:       boolean;
+  trusted:     boolean;   // real trust: Node validated the chain to a system root
+  wellKnownCa: boolean;   // cosmetic: root/issuer name matched our known-CA list
+  rootCa:      string | null;
 }
 
 interface TlsResult {
@@ -106,12 +116,18 @@ interface TlsResult {
   authError:  string | null;
 }
 
-function fetchCertChain(domain: string, timeoutMs = 8000): Promise<TlsResult> {
+async function fetchCertChain(domain: string, timeoutMs = 8000): Promise<TlsResult> {
+  // Resolve the name and reject private addresses, then pin the connection to
+  // the vetted IP (SNI/validation still use `domain`). This closes the SSRF hole
+  // (a public name whose A record points at 10.x / 169.254.x) and eliminates the
+  // DNS-rebinding window — the address we checked is the address we dial.
+  const [connectHost] = await assertHostAllowed(domain);
+
   return new Promise((resolve, reject) => {
     // rejectUnauthorized: false → we WANT to see invalid certs, not throw on them.
     // The scoring logic uses authorized + authError to detect invalid chains.
     const socket = tls.connect({
-      host:               domain,
+      host:               connectHost,
       port:               443,
       servername:         domain,
       timeout:            timeoutMs,
@@ -146,10 +162,13 @@ function fetchCertChain(domain: string, timeoutMs = 8000): Promise<TlsResult> {
         const rootCN   = asString(last?.issuer?.CN);
         const rootCa: string | null = rootO || rootCN || null;
 
-        // Trusted CA detection — check both root and immediate issuer
+        // Cosmetic "well-known CA" label — check both root and immediate issuer
+        // against our short name list. This must NOT decide trust: a valid cert
+        // from a public CA not in the list (SSL.com, Certum, …) would otherwise
+        // be mislabeled UNTRUSTED. Real trust = socket.authorized (below).
         const issuerOLower = asString(peerCert.issuer?.O).toLowerCase();
         const rootLower    = rootCa?.toLowerCase() ?? "";
-        const trusted = TRUSTED_CAS.some(ca =>
+        const wellKnownCa = TRUSTED_CAS.some(ca =>
           rootLower.includes(ca) || issuerOLower.includes(ca)
         );
 
@@ -178,6 +197,10 @@ function fetchCertChain(domain: string, timeoutMs = 8000): Promise<TlsResult> {
         const proto   = socket.getProtocol();
         const authErr = socket.authorizationError;
 
+        // Real trust decision: Node validated the presented chain against the
+        // full system root store. A self-signed leaf is never "trusted".
+        const trusted = socket.authorized && !isSelfSigned;
+
         const result: TlsResult = {
           cert: {
             subject:        asString(peerCert.subject?.CN) || asString(peerCert.subject?.O) || domain,
@@ -191,9 +214,10 @@ function fetchCertChain(domain: string, timeoutMs = 8000): Promise<TlsResult> {
             isSelfSigned,
           },
           chain: {
-            depth:   chainCerts.length,
-            valid:   !authErr,
-            trusted: trusted && !isSelfSigned,
+            depth:       chainCerts.length,
+            valid:       !authErr,
+            trusted,
+            wellKnownCa,
             rootCa,
           },
           protocol:   proto,
@@ -224,10 +248,18 @@ interface Score {
   warnings:  string[];
 }
 
-// Heuristic: detect weak cipher from name (e.g. "DES-CBC3-SHA")
+// Detect a weak cipher from its OpenSSL name. Two cases:
+//   1. Outright-broken primitives (RC4, DES/3DES, MD5, NULL, EXPORT).
+//   2. Legacy CBC-mode suites — an OpenSSL name with no AEAD marker (GCM /
+//      ChaCha20-Poly1305 / CCM) is a CBC suite (e.g. "AES128-SHA",
+//      "ECDHE-RSA-AES256-SHA384"). The old "cbc-sha\b" fragment was a literal
+//      backspace char and never matched any real cipher name.
 function isCipherWeak(cipherName: string): boolean {
   const n = cipherName.toLowerCase();
-  return WEAK_CIPHER_FRAGMENTS.some(f => n.includes(f.replace(/\\b/g, "")));
+  if (!n) return false;
+  if (WEAK_CIPHER_FRAGMENTS.some(f => n.includes(f))) return true;
+  if (!AEAD_MARKERS.some(m => n.includes(m))) return true;
+  return false;
 }
 
 function scoreCertificate(result: TlsResult): Score {
@@ -395,7 +427,11 @@ router.get("/sslcheck", async (req: Request, res: Response) => {
     res.json(response);
 
   } catch (err) {
-    const msg = err instanceof Error ? err.message : "Unknown error";
+    // Don't echo which internal IP a name resolved to — keep the endpoint from
+    // acting as an internal-network reachability oracle.
+    const msg = err instanceof BlockedHostError
+      ? "Target host not permitted"
+      : (err instanceof Error ? err.message : "Unknown error");
     res.status(502).json({
       error:   "SSL check failed",
       domain,

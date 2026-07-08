@@ -37,10 +37,23 @@ if (!PAY_TO || !PAY_TO.startsWith("0x")) {
 
 // ─── x402 Setup ───────────────────────────────────────────────────────────────
 
-const facilitatorClient = IS_MAINNET && process.env.CDP_API_KEY_ID
+// On mainnet, real USDC is at stake: require CDP facilitator credentials and
+// fail fast. Otherwise the server would silently fall back to the public
+// facilitator (which cannot settle mainnet payments) while advertising mainnet
+// prices — clients would pay real USDC and every settlement would fail.
+if (IS_MAINNET && (!process.env.CDP_API_KEY_ID || !process.env.CDP_API_KEY_SECRET)) {
+  console.error(
+    "❌  NETWORK is Base Mainnet but CDP_API_KEY_ID / CDP_API_KEY_SECRET are not set.\n" +
+    "    Mainnet settlement requires CDP facilitator credentials — set both, or use a testnet NETWORK."
+  );
+  process.exit(1);
+}
+
+const usingCdp = IS_MAINNET; // guaranteed to have CDP creds past the guard above
+const facilitatorClient = usingCdp
   ? new HTTPFacilitatorClient(
       createFacilitatorConfig(
-        process.env.CDP_API_KEY_ID,
+        process.env.CDP_API_KEY_ID!,
         process.env.CDP_API_KEY_SECRET!
       )
     )
@@ -52,31 +65,33 @@ registerExactEvmScheme(resourceServer);
 // ─── App ──────────────────────────────────────────────────────────────────────
 
 const app = express();
-app.use(cors());
+
+// Public agent-facing API with no cookies/credentials. Reflect any origin but
+// forbid credentialed cross-origin requests and non-GET methods.
+app.use(cors({
+  origin:      true,
+  methods:     ["GET", "OPTIONS"],
+  credentials: false,
+}));
 app.use(express.json());
 
-// Trust Railway's single proxy hop — needed for req.protocol to detect HTTPS
-// and for x402 to build the resource URL correctly in 402 responses.
+// Trust Railway's single proxy hop — needed for req.protocol to detect HTTPS,
+// for x402 to build the resource URL correctly in 402 responses, and so that
+// req.ip is the real client IP (used as the rate-limit key below).
 app.set("trust proxy", 1);
 
-// Rate limiter — uses a custom keyGenerator so we don't depend on trust proxy
-// for IP detection (more secure than blanket trusting forwarded headers).
+// Rate limiter — 60 req/min per client IP. Keyed on req.ip (derived from the
+// single trusted proxy hop), NOT a client-settable header like cf-connecting-ip:
+// api.trustsource.cc is DNS-only (Cloudflare bypassed), so a direct caller could
+// spoof cf-connecting-ip to mint a fresh bucket per request. Mounted BEFORE the
+// paywall (see below) so it also throttles free routes and unpaid 402 floods.
 const limiter = rateLimit({
   windowMs: 60 * 1000,
   max: 60,
   standardHeaders: true,
   legacyHeaders: false,
-  keyGenerator: (req) => {
-    return (req.headers["cf-connecting-ip"] as string) ||
-           (req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim() ||
-           req.ip ||
-           "unknown";
-  },
-  validate: {
-    trustProxy:               false,   // we set it intentionally to 1
-    keyGeneratorIpFallback:   false,   // we use our own IP detection
-  },
 });
+app.use(limiter);
 
 // Safety net: ensure 402 responses always carry the PAYMENT-REQUIRED header.
 // @x402/express in some configurations puts the v2 payload in the body only —
@@ -104,19 +119,35 @@ app.use((_req, res, next) => {
 //   { "evt": "request" ... "status": 402 }  ← 402 issued, client never retried
 //   { "evt": "request" ... "status": 429 }  ← rate-limited
 // Filter your own test IPs with:  grep -v '"ip":"YOUR_TEST_IP"'
+// Strip credentials and secret-bearing query values before logging. A caller
+// can pass ?url=https://user:token@site/cb?apikey=SECRET — logging req.query
+// verbatim would persist those secrets in Railway logs.
+function sanitizeQueryForLog(query: Record<string, unknown>): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(query)) {
+    if (typeof v !== "string") { out[k] = v; continue; }
+    if (k === "url") {
+      try {
+        const u = new URL(v.match(/^https?:\/\//i) ? v : `https://${v}`);
+        u.username = ""; u.password = ""; u.search = "";
+        out[k] = u.origin + u.pathname;
+      } catch { out[k] = "[unparseable]"; }
+    } else {
+      out[k] = v.slice(0, 253);
+    }
+  }
+  return out;
+}
+
 app.use((req, res, next) => {
   if (!PAID_PATHS.has(req.path)) return next();
   const startedAt = Date.now();
   res.on("finish", () => {
-    const ip =
-      (req.headers["cf-connecting-ip"] as string) ||
-      (req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim() ||
-      req.ip ||
-      "unknown";
+    const ip = req.ip || "unknown";
     const log = {
       evt:       "request",
       path:      req.path,
-      query:     req.query,
+      query:     sanitizeQueryForLog(req.query as Record<string, unknown>),
       status:    res.statusCode,
       settled:   res.statusCode === 200,
       ip,
@@ -208,8 +239,8 @@ app.use(
             },
             output: {
               example: {
-                domain: "google.com", score: 90, tier: "TRUSTED",
-                breakdown: { domainAge: 30, tld: 20, dnsPresence: 30, registrar: 10 },
+                domain: "google.com", score: 100, tier: "TRUSTED",
+                breakdown: { domainAge: 30, tld: 20, dnsPresence: 30, registrar: 20 },
               },
             },
           }),
@@ -281,7 +312,6 @@ app.use(
 
 // ─── Paid routes ──────────────────────────────────────────────────────────────
 
-app.use(limiter);
 app.use(trustscoreRouter);
 app.use(sslcheckRouter);
 app.use(headersRouter);
@@ -303,7 +333,7 @@ app.listen(PORT, () => {
 ║  URL       : http://localhost:${PORT}                                   ║
 ║  Network   : ${NETWORK} ${IS_MAINNET ? "(MAINNET 🟢)" : "(TESTNET ✓) "} ║
 ║  Pay to    : ${PAY_TO.slice(0, 10)}...                                  ║
-║  Facilitator: ${IS_MAINNET ? "CDP (production) " : "x402.org (public) "}║
+║  Facilitator: ${usingCdp ? "CDP (production) " : "x402.org (public) "}║
 ╠═════════════════════════════════════════════════════════════════════════╣
 ║  Endpoints:                                          ║
 ║    GET /              → Landing / API info (free)    ║

@@ -1,17 +1,22 @@
 import { Router, Request, Response } from "express";
-import dns from "dns/promises";
+import net from "net";
+import {
+  VALID_DOMAIN_RE,
+  ALLOWED_PORTS,
+  assertHostAllowed,
+  assertUrlSchemeAndPort,
+  isPrivateIp,
+  normalizeHostname,
+  BlockedHostError,
+} from "../lib/net-guard.js";
 
 const router = Router();
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const VALID_DOMAIN_RE = /^[a-zA-Z0-9][a-zA-Z0-9\-.]{1,251}[a-zA-Z0-9]$/;
-const PRIVATE_IPV4_RE = /^(10\.|172\.(1[6-9]|2\d|3[01])\.|192\.168\.|127\.|0\.0\.0\.0|169\.254\.)/;
-const PRIVATE_IPV6_RE = /^(::1|fc00:|fd00:|fe80:)/i;
-
-const ALLOWED_PORTS  = new Set(["", "80", "443", "8080", "8443"]);
 const FETCH_TIMEOUT  = 8000;
 const MAX_BODY_BYTES = 100 * 1024;   // robots.txt cap — 100 KB (RFC-recommended limit is 500 KB, we're stricter)
+const MAX_REDIRECTS  = 3;
 
 // ─── Known AI/LLM training bots (Spring 2026 list) ────────────────────────────
 // Tracking these gives agents a quick read on whether a site permits AI crawling.
@@ -95,14 +100,14 @@ function extractAndValidateDomain(input: string): { domain: string } | { error: 
     return { error: `Port ${url.port} not permitted` };
   }
 
-  const hostname = url.hostname.toLowerCase().replace(/^www\./, "");
+  const hostname = normalizeHostname(url.hostname).replace(/^www\./, "");
   if (!hostname) return { error: "Missing hostname" };
   if (hostname === "localhost") return { error: "Localhost not permitted" };
-  if (PRIVATE_IPV4_RE.test(hostname) || PRIVATE_IPV6_RE.test(hostname)) {
+  if (isPrivateIp(hostname)) {
     return { error: "Private addresses not permitted" };
   }
 
-  const isIp = /^[\d.]+$/.test(hostname) || hostname.includes(":");
+  const isIp = net.isIP(hostname) !== 0;
   if (!isIp && !VALID_DOMAIN_RE.test(hostname)) {
     return { error: "Invalid hostname" };
   }
@@ -110,25 +115,7 @@ function extractAndValidateDomain(input: string): { domain: string } | { error: 
   return { domain: hostname };
 }
 
-async function isHostnameSafe(hostname: string): Promise<boolean> {
-  if (/^[\d.]+$/.test(hostname) || hostname.includes(":")) {
-    return !PRIVATE_IPV4_RE.test(hostname) && !PRIVATE_IPV6_RE.test(hostname);
-  }
-  try {
-    const addresses = await Promise.race([
-      dns.resolve(hostname),
-      new Promise<string[]>((_, reject) => setTimeout(() => reject(new Error("DNS timeout")), 3000)),
-    ]);
-    for (const addr of addresses) {
-      if (PRIVATE_IPV4_RE.test(addr) || PRIVATE_IPV6_RE.test(addr)) return false;
-    }
-    return addresses.length > 0;
-  } catch {
-    return false;
-  }
-}
-
-// ─── Fetch robots.txt with body size cap ─────────────────────────────────────
+// ─── Fetch robots.txt with SSRF re-validation on every hop + body size cap ────
 
 interface FetchResult {
   exists:    boolean;
@@ -138,21 +125,47 @@ interface FetchResult {
 }
 
 async function fetchRobotsTxt(domain: string): Promise<FetchResult> {
-  const safe = await isHostnameSafe(domain);
-  if (!safe) throw new Error(`Refused: ${domain} resolves to a private address`);
+  // Bracket bare IPv6 literals so they form a valid URL authority.
+  const hostForUrl = net.isIPv6(domain) ? `[${domain}]` : domain;
 
   // Try HTTPS first, fall back to HTTP (some sites still don't redirect)
-  const urls = [`https://${domain}/robots.txt`, `http://${domain}/robots.txt`];
+  const candidates = [
+    `https://${hostForUrl}/robots.txt`,
+    `http://${hostForUrl}/robots.txt`,
+  ];
 
   let lastErr: Error | null = null;
-  for (const url of urls) {
+  for (const candidate of candidates) {
     try {
-      const controller = new AbortController();
-      const timer      = setTimeout(() => controller.abort(), FETCH_TIMEOUT);
+      return await fetchGuarded(new URL(candidate));
+    } catch (err) {
+      if (err instanceof BlockedHostError) throw err; // don't retry a blocked target
+      lastErr = err instanceof Error ? err : new Error(String(err));
+      continue;
+    }
+  }
+  throw lastErr || new Error("Failed to fetch robots.txt");
+}
 
-      const response = await fetch(url, {
+// Follow redirects manually, re-validating scheme/port and re-resolving the host
+// against private ranges on EVERY hop. Native redirect:"follow" would let a
+// public site 30x-bounce us to an internal address (or a disallowed port)
+// without any re-check — the same SSRF surface /headers already closes.
+async function fetchGuarded(startUrl: URL): Promise<FetchResult> {
+  let currentUrl = startUrl;
+  let redirects  = 0;
+
+  while (redirects <= MAX_REDIRECTS) {
+    assertUrlSchemeAndPort(currentUrl);
+    await assertHostAllowed(currentUrl.hostname);
+
+    const controller = new AbortController();
+    const timer      = setTimeout(() => controller.abort(), FETCH_TIMEOUT);
+
+    try {
+      const response = await fetch(currentUrl.toString(), {
         method:   "GET",
-        redirect: "follow",   // robots.txt redirects are fine, browsers follow them
+        redirect: "manual",
         signal:   controller.signal,
         headers: {
           "User-Agent":      "TrustSource-RobotsCheck/1.0 (+https://trustsource.cc)",
@@ -162,6 +175,22 @@ async function fetchRobotsTxt(domain: string): Promise<FetchResult> {
       });
       clearTimeout(timer);
 
+      // Redirect — re-validate the next hop on the following loop iteration.
+      if (response.status >= 300 && response.status < 400) {
+        const location = response.headers.get("location");
+        try { await response.body?.cancel(); } catch { /* ignore */ }
+        if (!location) {
+          return { exists: false, status: response.status, body: "", truncated: false };
+        }
+        try {
+          currentUrl = new URL(location, currentUrl);
+        } catch {
+          throw new Error("Invalid redirect Location header");
+        }
+        redirects++;
+        continue;
+      }
+
       // No robots.txt → not an error, just record it
       if (response.status === 404) {
         try { await response.body?.cancel(); } catch { /* ignore */ }
@@ -169,16 +198,15 @@ async function fetchRobotsTxt(domain: string): Promise<FetchResult> {
       }
 
       // Stream the body up to MAX_BODY_BYTES, then abort
-      let body       = "";
-      let totalBytes = 0;
-      let truncated  = false;
-
       const reader = response.body?.getReader();
       if (!reader) {
         return { exists: response.status === 200, status: response.status, body: "", truncated: false };
       }
 
-      const decoder = new TextDecoder("utf-8");
+      let body       = "";
+      let totalBytes = 0;
+      let truncated  = false;
+      const decoder  = new TextDecoder("utf-8");
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
@@ -194,11 +222,11 @@ async function fetchRobotsTxt(domain: string): Promise<FetchResult> {
 
       return { exists: response.status === 200, status: response.status, body, truncated };
     } catch (err) {
-      lastErr = err instanceof Error ? err : new Error(String(err));
-      continue;
+      clearTimeout(timer);
+      throw err;
     }
   }
-  throw lastErr || new Error("Failed to fetch robots.txt");
+  throw new Error(`Too many redirects (max ${MAX_REDIRECTS})`);
 }
 
 // ─── robots.txt parser ────────────────────────────────────────────────────────
@@ -217,14 +245,19 @@ interface ParsedRobots {
   hasErrors:  boolean;
 }
 
-function parseRobotsTxt(body: string): ParsedRobots {
+export function parseRobotsTxt(body: string): ParsedRobots {
   const lines = body.split(/\r?\n/);
   const rawLines = lines.length;
 
   const userAgents: UserAgentRules[] = [];
   const sitemaps:   string[] = [];
-  let currentGroup: UserAgentRules | null = null;
-  let hasErrors = false;
+  // Consecutive "User-agent:" lines share the rule block that follows them
+  // (RFC 9309 §2.2.1). Accumulate the run of UAs, then apply each rule to all
+  // of them — otherwise rules bind only to the last UA in the run and a site
+  // that blocks several bots at once looks like it blocks only one.
+  let activeGroup: UserAgentRules[] = [];
+  let afterRule   = false;   // has a rule directive appeared since the last UA line?
+  let hasErrors   = false;
 
   for (let line of lines) {
     // Strip comments and trim
@@ -241,29 +274,28 @@ function parseRobotsTxt(body: string): ParsedRobots {
 
     switch (directive) {
       case "user-agent": {
-        // A new user-agent block — but consecutive user-agent lines share a group
-        if (!currentGroup || currentGroup.allow.length || currentGroup.disallow.length || currentGroup.crawlDelay !== null) {
-          currentGroup = { userAgent: value, allow: [], disallow: [], crawlDelay: null };
-          userAgents.push(currentGroup);
-        } else {
-          // Empty group, add this UA as a peer (duplicate the rules later by reference)
-          currentGroup = { userAgent: value, allow: [], disallow: [], crawlDelay: null };
-          userAgents.push(currentGroup);
-        }
+        // A UA line after a rule starts a fresh group; a UA line directly after
+        // another UA line joins the same (still ruleless) group.
+        if (afterRule) { activeGroup = []; afterRule = false; }
+        const ua: UserAgentRules = { userAgent: value, allow: [], disallow: [], crawlDelay: null };
+        activeGroup.push(ua);
+        userAgents.push(ua);
         break;
       }
       case "allow":
-        if (currentGroup) currentGroup.allow.push(value);
+        for (const g of activeGroup) g.allow.push(value);
+        afterRule = true;
         break;
       case "disallow":
-        if (currentGroup) currentGroup.disallow.push(value);
+        for (const g of activeGroup) g.disallow.push(value);
+        afterRule = true;
         break;
-      case "crawl-delay":
-        if (currentGroup) {
-          const n = parseFloat(value);
-          if (!isNaN(n)) currentGroup.crawlDelay = n;
-        }
+      case "crawl-delay": {
+        const n = parseFloat(value);
+        if (!isNaN(n)) for (const g of activeGroup) g.crawlDelay = n;
+        afterRule = true;
         break;
+      }
       case "sitemap":
         if (value) sitemaps.push(value);
         break;
@@ -285,16 +317,17 @@ interface AiBotPolicy {
   rules:    { allow: string[]; disallow: string[] };
 }
 
-function analyzeAiBotPolicies(parsed: ParsedRobots): {
+export function analyzeAiBotPolicies(parsed: ParsedRobots): {
   policies:    AiBotPolicy[];
   globalBlock: boolean;       // "User-agent: *" disallows "/"
   globalAllow: boolean;       // "User-agent: *" with no disallows or only "Disallow:"
 } {
   const policies: AiBotPolicy[] = [];
 
-  // Find global "*" group
+  // Find global "*" group. Note: an empty "Disallow:" value means ALLOW ALL
+  // (RFC 9309 §2.2.2), so only a literal "/" counts as a root block.
   const globalGroup = parsed.userAgents.find(g => g.userAgent === "*");
-  const globalBlock = !!globalGroup && globalGroup.disallow.some(d => d === "/" || d === "");
+  const globalBlock = !!globalGroup && globalGroup.disallow.some(d => d === "/");
   const globalAllow = !globalGroup || globalGroup.disallow.length === 0 ||
                       globalGroup.disallow.every(d => d === "");
 
@@ -315,7 +348,8 @@ function analyzeAiBotPolicies(parsed: ParsedRobots): {
       continue;
     }
 
-    const blockedRoot = match.disallow.some(d => d === "/" || d === "");
+    // Empty "Disallow:" means allow-all, so only a literal "/" blocks the root.
+    const blockedRoot = match.disallow.some(d => d === "/");
     const hasAllow    = match.allow.length > 0;
     const hasDisallow = match.disallow.length > 0 && match.disallow.some(d => d !== "");
 
@@ -332,7 +366,7 @@ function analyzeAiBotPolicies(parsed: ParsedRobots): {
 
 // ─── Overall tier classification ──────────────────────────────────────────────
 
-function classifyTier(
+export function classifyTier(
   exists:      boolean,
   globalBlock: boolean,
   aiAnalysis:  ReturnType<typeof analyzeAiBotPolicies>
@@ -442,7 +476,11 @@ router.get("/robots", async (req: Request, res: Response) => {
     res.json(response);
 
   } catch (err) {
-    const msg = err instanceof Error ? err.message : "Unknown error";
+    // Don't leak internal-resolution detail (e.g. "resolves to 10.0.0.5") to
+    // the client — that turns the endpoint into an internal-network oracle.
+    const msg = err instanceof BlockedHostError
+      ? "Target host not permitted"
+      : (err instanceof Error ? err.message : "Unknown error");
     res.status(502).json({
       error:   "robots.txt fetch failed",
       domain,

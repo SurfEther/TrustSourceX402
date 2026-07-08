@@ -7,5 +7,5 @@ security-test.mjs
 test-client.mjs
 .npmrc
 .tgz*
-.mcpb
+*.mcpb
 verify-bazaar.mjs

@@ -3,15 +3,15 @@
   "name": "io.github.SurfEther/trustsource",
   "description": "x402-paid domain verification for AI agents — trustscore, SSL, security headers, robots.",
   "repository": {
-    "url": "https://github.com/SurfEther/trustsourcex402",
+    "url": "https://github.com/SurfEther/TrustSourceX402",
     "source": "github"
   },
-  "version": "0.1.6",
+  "version": "0.1.7",
   "packages": [
     {
       "registryType": "npm",
       "identifier": "trustsource-mcp",
-      "version": "0.1.6",
+      "version": "0.1.7",
       "transport": {
         "type": "stdio"
       },

@@ -23,11 +23,13 @@ import { z } from "zod";
 
 // ─── Config ──────────────────────────────────────────────────────────────────
 
+// Use || (not ??) so an empty-string env var falls back to the default; with ??
+// an empty TRUSTSOURCE_API_URL would make BASE_URL "" and every request throw.
 const BASE_URL =
-  process.env.TRUSTSOURCE_API_URL?.replace(/\/$/, "") ??
+  process.env.TRUSTSOURCE_API_URL?.trim().replace(/\/$/, "") ||
   "https://api.trustsource.cc";
 
-const PRIVATE_KEY = process.env.WALLET_PRIVATE_KEY;
+const PRIVATE_KEY = process.env.WALLET_PRIVATE_KEY?.trim();
 
 if (!PRIVATE_KEY) {
   // Write to stderr so it does not interfere with the stdio transport.
@@ -39,7 +41,28 @@ if (!PRIVATE_KEY) {
   process.exit(1);
 }
 
-const signer   = privateKeyToAccount(PRIVATE_KEY as `0x${string}`);
+// Validate the shape BEFORE handing it to viem, so a malformed key produces a
+// clear message instead of an opaque library stack trace at module load.
+if (!/^0x[0-9a-fA-F]{64}$/.test(PRIVATE_KEY)) {
+  console.error(
+    "[trustsource-mcp] FATAL: WALLET_PRIVATE_KEY is malformed.\n" +
+      "Expected a 0x-prefixed 64-hex-character string (a 32-byte Base private key).\n" +
+      "See https://trustsource.cc for funding instructions.",
+  );
+  process.exit(1);
+}
+
+let signer: ReturnType<typeof privateKeyToAccount>;
+try {
+  signer = privateKeyToAccount(PRIVATE_KEY as `0x${string}`);
+} catch {
+  console.error(
+    "[trustsource-mcp] FATAL: could not derive an account from WALLET_PRIVATE_KEY.\n" +
+      "Double-check that it is a valid Base Mainnet private key.",
+  );
+  process.exit(1);
+}
+
 const client   = new x402Client();
 registerExactEvmScheme(client, { signer });
 const fetch402 = wrapFetchWithPayment(fetch, client);
@@ -99,7 +122,7 @@ async function callApi(path: string, params: Record<string, string>): Promise<To
 
 const server = new McpServer({
   name: "trustsource",
-  version: "0.1.0",
+  version: "0.1.7",
 });
 
 // Tool 1: TrustScore — domain trust scoring
@@ -119,7 +142,7 @@ server.tool(
 // Tool 2: SslCheck — TLS certificate intelligence
 server.tool(
   "trustsource_ssl",
-  "Perform a live TLS handshake to a domain and return SSL/TLS certificate intelligence: chain validity, trusted root CA detection, expiry date and days remaining, signature algorithm, TLS protocol version, and cipher quality. Returns 0–100 score and tier VALID / EXPIRING / WEAK / EXPIRED / UNTRUSTED / INVALID. Use before sending credentials, posting forms, downloading code, or making any HTTPS request to a domain you do not fully trust. Cost: $0.002 USDC per call. Cached 1 hour server-side.",
+  "Perform a live TLS handshake to a domain and return SSL/TLS certificate intelligence: chain validity, trusted root CA detection, expiry date and days remaining, TLS protocol version, and cipher quality. Returns 0–100 score and tier VALID / EXPIRING / WEAK / EXPIRED / UNTRUSTED / INVALID. Use before sending credentials, posting forms, downloading code, or making any HTTPS request to a domain you do not fully trust. Cost: $0.002 USDC per call. Cached 6 hours server-side.",
   {
     domain: z
       .string()
@@ -133,7 +156,7 @@ server.tool(
 // Tool 3: Headers — HTTP security header audit
 server.tool(
   "trustsource_headers",
-  "Audit a URL's HTTP security headers and return a defense-in-depth letter grade A+ through F. Checks HSTS (Strict-Transport-Security), Content-Security-Policy, X-Frame-Options, X-Content-Type-Options, Referrer-Policy, Permissions-Policy, and Cross-Origin-* headers. Use when crawling, embedding, building integrations against, or auditing a site. Note: many legitimate marketing sites grade F — this measures hardening, not active vulnerabilities. Cost: $0.003 USDC per call. Cached up to 12 hours server-side.",
+  "Audit a URL's HTTP security headers and return a defense-in-depth letter grade A+ through F. Checks HSTS (Strict-Transport-Security), Content-Security-Policy, X-Frame-Options, X-Content-Type-Options, Referrer-Policy, Permissions-Policy, and Cross-Origin-* headers. Use when crawling, embedding, building integrations against, or auditing a site. Note: many legitimate marketing sites grade F — this measures hardening, not active vulnerabilities. Cost: $0.003 USDC per call. Cached up to 4 hours server-side.",
   {
     url: z
       .string()

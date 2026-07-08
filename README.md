@@ -1,4 +1,4 @@
-# Trustsource API
+# TrustSource API
 
 x402-powered intelligence APIs for AI agents. Pay per use, no API keys, no accounts.
 
@@ -45,7 +45,7 @@ curl http://localhost:3000/trustscore?domain=example.com
 ```
 
 ### Paid endpoint — bypass payment for local dev testing
-The x402 testnet facilitator at `https://facilitator.x402.org` accepts test payments.
+The x402 testnet facilitator at `https://x402.org/facilitator` accepts test payments.
 To fully test the payment flow, use an x402 client with a funded testnet wallet.
 
 Get Base Sepolia testnet ETH: https://sepolia.base.org/faucet  
@@ -120,11 +120,19 @@ Returns a 0–100 trust score for any domain.
 ## Project Structure
 
 ```
-agentbrain/
+trustsource/
 ├── src/
-│   ├── server.ts          # Express app + x402 middleware
+│   ├── server.ts          # Express app + x402 middleware, rate limiting, logging
+│   ├── openapi.ts         # OpenAPI 3.1 spec served at /openapi.json
+│   ├── lib/
+│   │   └── net-guard.ts   # Shared SSRF guard (private-IP checks, resolve + pin)
 │   └── routes/
-│       └── trustscore.ts  # Domain analysis logic
+│       ├── trustscore.ts  # WHOIS + DNS + TLD + registrar scoring
+│       ├── sslcheck.ts    # Live TLS handshake + certificate scoring
+│       ├── headers.ts     # HTTP security-header audit
+│       └── robots.ts      # robots.txt + AI-bot policy detection
+├── mcp-server/            # MCP server wrapping the four APIs as tools
+├── public/                # Landing page
 ├── .env.example
 ├── .env                   # Your config (git-ignored)
 ├── package.json
@@ -135,8 +143,12 @@ agentbrain/
 
 ## Roadmap
 
-- [x] Phase 1: TrustScore API
-- [ ] Phase 2: ResearchOracle API
-- [ ] Phase 3: SkillForge API
-- [ ] Phase 4: Bazaar/Agentic.Market listing
-- [ ] Phase 5: Cloudflare Workers deployment
+- [x] TrustScore API — domain trust scoring
+- [x] SslCheck API — TLS/SSL certificate intelligence
+- [x] Headers API — HTTP security-header audit
+- [x] Robots API — robots.txt + AI-bot policy detection
+- [x] OpenAPI spec at `/openapi.json`
+- [x] Bazaar / Agentic.Market discovery extension
+- [x] MCP server (`trustsource-mcp`) wrapping all four APIs
+- [ ] Wallet Reputation API
+- [ ] Additional recon endpoints (subdomains, IP intelligence)

@@ -1,1 +1,1 @@
-echo "web: npm start"
+web: npm start

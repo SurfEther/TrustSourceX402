@@ -2,12 +2,12 @@
   "manifest_version": "0.2",
   "name": "trustsource",
   "display_name": "TrustSource — Domain Verification",
-  "version": "0.1.1",
+  "version": "0.1.7",
   "description": "Four x402-paid domain verification tools for AI agents — trust scoring, SSL certificate intelligence, HTTP security header audit, and robots.txt + AI bot policy detection. Pays per call in USDC on Base Mainnet.",
   "long_description": "TrustSource exposes four pay-per-call verification APIs over the x402 protocol on Base Mainnet. Each tool settles its own micropayment ($0.002–$0.003 USDC) atomically per call. No API keys, no signups — just a funded Base wallet. Suggested starter balance: $1 USDC + 0.0005 ETH covers ~300 calls. Tools are also discoverable to autonomous agents via Coinbase's Bazaar marketplace at agentic.market.",
   "author": {
-    "name": "TrustSource <hello@trustsource.cc>",
-    "email": "support@trustsource.cc"
+    "name": "TrustSource",
+    "email": "hello@trustsource.cc"
   },
   "homepage": "https://trustsource.cc",
   "documentation": "https://github.com/SurfEther/TrustSourceX402",
@@ -26,8 +26,7 @@
       }
     }
   },
-  "tools": []
-  ,
+  "tools": [],
   "compatibility": {
     "platforms": [
       "darwin",
@@ -35,7 +34,7 @@
       "linux"
     ],
     "runtimes": {
-      "node": ">=18.0.0"
+      "node": ">=20.19.0"
     }
   },
   "user_config": {

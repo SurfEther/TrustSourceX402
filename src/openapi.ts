@@ -6,7 +6,7 @@ const spec = {
   openapi: "3.1.0",
   info: {
     title:       "TrustSource API",
-    version:     "1.0.0",
+    version:     "0.3.0",
     description: "x402-powered domain, SSL, security, and crawler-policy intelligence for AI agents. Four endpoints return structured trust intelligence on any domain — no API keys, no accounts. Pay per use with USDC via the x402 protocol on Base Mainnet.",
     contact: {
       url: "https://trustsource.cc",
@@ -132,14 +132,14 @@ const spec = {
                 schema:  { $ref: "#/components/schemas/TrustScoreResponse" },
                 example: {
                   domain:   "google.com",
-                  score:    90,
+                  score:    100,
                   maxScore: 100,
                   tier:     "TRUSTED",
                   breakdown: {
                     domainAge:   30,
                     tld:         20,
                     dnsPresence: 30,
-                    registrar:   10,
+                    registrar:   20,
                   },
                   details: {
                     age: {
@@ -214,7 +214,7 @@ const spec = {
           "and security warnings.",
           "",
           "**Payment:** 0.002 USDC per call via x402 protocol (Base Mainnet).",
-          "**Caching:** Results are cached for 1 hour per domain.",
+          "**Caching:** Results are cached for 6 hours per domain.",
         ].join("\n"),
         tags: ["Trust"],
         parameters: [
@@ -271,7 +271,7 @@ const spec = {
           "legitimate marketing sites grade F.",
           "",
           "**Payment:** 0.003 USDC per call via x402 protocol (Base Mainnet).",
-          "**Caching:** Results cached up to 12 hours per URL.",
+          "**Caching:** Results cached up to 4 hours per URL.",
         ].join("\n"),
         tags: ["Trust"],
         parameters: [
@@ -434,7 +434,7 @@ const spec = {
               chainValid:   { type: "integer", description: "Certificate chain validity (0–30)" },
               trustedCa:    { type: "integer", description: "Trusted root CA (0–25)" },
               notExpired:   { type: "integer", description: "Expiry margin (0–25)" },
-              strongCrypto: { type: "integer", description: "Signature strength (0–10)" },
+              strongCrypto: { type: "integer", description: "Cipher strength — AEAD vs legacy CBC/weak (0–10)" },
               modernTls:    { type: "integer", description: "TLS protocol version (0–10)" },
             },
           },
@@ -447,7 +447,6 @@ const spec = {
               validFrom:          { type: "string", format: "date-time" },
               validTo:            { type: "string", format: "date-time" },
               daysRemaining:      { type: "integer", example: 67 },
-              signatureAlgorithm: { type: "string", example: "RSA-SHA256" },
               san:                { type: "array", items: { type: "string" } },
               fingerprint256:     { type: "string" },
               serialNumber:       { type: "string" },
@@ -457,10 +456,11 @@ const spec = {
           chain: {
             type: "object",
             properties: {
-              depth:   { type: "integer", example: 3 },
-              valid:   { type: "boolean" },
-              trusted: { type: "boolean" },
-              rootCa:  { type: ["string", "null"] },
+              depth:       { type: "integer", example: 3 },
+              valid:       { type: "boolean", description: "Chain validated with no authorization error" },
+              trusted:     { type: "boolean", description: "Chain validated to a system-trusted root (the real trust signal)" },
+              wellKnownCa: { type: "boolean", description: "Root/issuer name matched a well-known-CA list (cosmetic label only)" },
+              rootCa:      { type: ["string", "null"] },
             },
           },
           connection: {
@@ -499,15 +499,24 @@ const spec = {
           maxScore: { type: "integer", description: "Maximum possible score",             example: 100 },
           analysis: {
             type:        "object",
-            description: "Per-header analysis. Each header is keyed by its lower-case name.",
-            additionalProperties: { $ref: "#/components/schemas/HeaderAnalysis" },
+            description: "Per-header analysis, keyed by camelCase name: hsts, csp, xFrameOptions, xContentTypeOptions, referrerPolicy, permissionsPolicy, coop, serverDisclosure.",
+            properties: {
+              hsts:                { $ref: "#/components/schemas/HeaderAnalysis" },
+              csp:                 { $ref: "#/components/schemas/HeaderAnalysis" },
+              xFrameOptions:       { $ref: "#/components/schemas/HeaderAnalysis" },
+              xContentTypeOptions: { $ref: "#/components/schemas/HeaderAnalysis" },
+              referrerPolicy:      { $ref: "#/components/schemas/HeaderAnalysis" },
+              permissionsPolicy:   { $ref: "#/components/schemas/HeaderAnalysis" },
+              coop:                { $ref: "#/components/schemas/HeaderAnalysis" },
+              serverDisclosure:    { $ref: "#/components/schemas/HeaderAnalysis" },
+            },
             example: {
-              "strict-transport-security": {
+              hsts: {
                 present:  true,
                 value:    "max-age=31536000; includeSubDomains",
                 score:    20,
                 maxScore: 20,
-                notes:    ["HSTS enabled with 1-year max-age and subdomain coverage"],
+                notes:    [],
               },
             },
           },
@@ -587,18 +596,35 @@ const spec = {
                 items: {
                   type: "object",
                   properties: {
-                    userAgent: { type: "string", example: "GPTBot" },
-                    blocked:   { type: "boolean" },
-                    partial:   { type: "boolean" },
-                    disallow:  { type: "array", items: { type: "string" } },
-                    allow:     { type: "array", items: { type: "string" } },
+                    bot:     { type: "string", example: "GPTBot" },
+                    blocked: { type: "boolean" },
+                    partial: { type: "boolean" },
+                    rules: {
+                      type: "object",
+                      properties: {
+                        allow:    { type: "array", items: { type: "string" } },
+                        disallow: { type: "array", items: { type: "string" } },
+                      },
+                    },
                   },
                 },
               },
             },
           },
-          sitemaps:   { type: "array", items: { type: "string" }, example: ["https://example.com/sitemap.xml"] },
-          userAgents: { type: "array", items: { type: "string" }, example: ["*", "GPTBot", "Googlebot"] },
+          sitemaps: { type: "array", items: { type: "string" }, example: ["https://example.com/sitemap.xml"] },
+          userAgents: {
+            type:        "array",
+            description: "Parsed User-agent groups with their rules",
+            items: {
+              type: "object",
+              properties: {
+                userAgent:  { type: "string", example: "*" },
+                allow:      { type: "array", items: { type: "string" } },
+                disallow:   { type: "array", items: { type: "string" }, example: ["/private"] },
+                crawlDelay: { type: ["number", "null"] },
+              },
+            },
+          },
           response: {
             type: "object",
             properties: {

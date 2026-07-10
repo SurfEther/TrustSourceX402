@@ -595,6 +595,8 @@
     <a href="/" class="nav-logo">Trust<span>Source</span></a>
     <ul class="nav-links">
       <li><a href="#apis">APIs</a></li>
+      <li><a href="#urlcheck">UrlCheck</a></li>
+      <li><a href="#emailtrust">EmailTrust</a></li>
       <li><a href="#trustscore">TrustScore</a></li>
       <li><a href="#sslcheck">SslCheck</a></li>
       <li><a href="#headers">Headers</a></li>
@@ -605,11 +607,12 @@
  
   <!-- ── Hero ── -->
   <section class="hero">
-    <div class="hero-tag">x402 · Base Mainnet · 4 endpoints live</div>
+    <div class="hero-tag">x402 · Base Mainnet · 6 endpoints live</div>
     <h1>Verification<br/>intelligence<br/>for <em>agents.</em></h1>
     <p class="hero-sub">
-      Four x402-powered APIs at <code style="color:var(--accent); background:var(--bg2); padding:2px 6px; font-size:0.85em;">api.trustsource.cc</code>
+      Six x402-powered APIs at <code style="color:var(--accent); background:var(--bg2); padding:2px 6px; font-size:0.85em;">api.trustsource.cc</code>
       that autonomous AI agents use before they transact.
+      A one-call CLEAR/REVIEW/BLOCK URL safety verdict. Email spoofability grading.
       Domain trust scoring. SSL certificate intelligence. HTTP security header audits.
       Robots.txt and AI bot policy detection.
       No API keys. Pay per query in USDC.
@@ -629,11 +632,11 @@
   <!-- ── Stats ── -->
   <div class="stats">
     <div class="stat">
-      <div class="stat-value"><span>4</span></div>
+      <div class="stat-value"><span>6</span></div>
       <div class="stat-label">Live APIs</div>
     </div>
     <div class="stat">
-      <div class="stat-value">$0.002<span>–.003</span></div>
+      <div class="stat-value">$0.002<span>–.01</span></div>
       <div class="stat-label">USDC per query</div>
     </div>
     <div class="stat">
@@ -648,12 +651,40 @@
  
   <!-- ── API overview cards ── -->
   <section class="section" id="apis">
-    <div class="section-label">// Four endpoints</div>
+    <div class="section-label">// Six endpoints</div>
     <h2 class="section-title">Verify anything<br/>before you transact.</h2>
     <p class="section-intro">
-      Each endpoint solves one specific verification need. They share a wallet, share an OpenAPI spec, and stack naturally — your agent can chain them together to get a complete picture of any target.
+      Each endpoint solves one specific verification need. They share a wallet, share an OpenAPI spec, and stack naturally — your agent can chain them together to get a complete picture of any target. Start with <code style="color:var(--accent);">/urlcheck</code> for a single go/no-go verdict, then drill into any signal.
     </p>
     <div class="api-cards">
+      <a href="#urlcheck" class="api-card">
+        <div>
+          <div class="api-card-header">
+            <span class="api-card-route">GET /urlcheck</span>
+            <span class="api-card-price">$0.01 USDC</span>
+          </div>
+          <div class="api-card-title">UrlCheck</div>
+          <div class="api-card-desc">
+            One call, one CLEAR / REVIEW / BLOCK verdict on any URL — fuses domain trust, a live TLS check, and typosquat/lookalike-brand detection into a single graded answer with reasons. The go/no-go your agent gates on.
+          </div>
+        </div>
+        <span class="api-card-link">Learn more →</span>
+      </a>
+
+      <a href="#emailtrust" class="api-card">
+        <div>
+          <div class="api-card-header">
+            <span class="api-card-route">GET /emailtrust</span>
+            <span class="api-card-price">$0.003 USDC</span>
+          </div>
+          <div class="api-card-title">EmailTrust</div>
+          <div class="api-card-desc">
+            Email-authentication posture grade (SPF, DKIM, DMARC, BIMI, MX). Tells your agent whether a sender domain can be spoofed, returns an A–F grade, and flags every misconfiguration.
+          </div>
+        </div>
+        <span class="api-card-link">Learn more →</span>
+      </a>
+
       <a href="#trustscore" class="api-card">
         <div>
           <div class="api-card-header">
@@ -712,6 +743,82 @@
     </div>
   </section>
  
+  <!-- ── UrlCheck detail ── -->
+  <section class="api-section" id="urlcheck">
+    <div class="api-section-inner">
+      <div class="api-section-text">
+        <div class="api-section-route">GET https://api.trustsource.cc/urlcheck?url=https://example.com</div>
+        <h2 class="api-section-title">UrlCheck</h2>
+        <p class="api-section-desc">
+          The one call an agent makes before it clicks, fetches, submits data to, or pays a link. Fuses domain trust (WHOIS age, TLD risk, DNS, registrar), a live TLS certificate check, and typosquat / lookalike-brand detection into a single CLEAR / REVIEW / BLOCK verdict with a 0–100 score and human-readable reasons — so your agent gates on one answer instead of running and interpreting several checks itself.
+        </p>
+
+        <div class="signal-list">
+          <div class="signal-row"><span class="signal-name">Domain trust (WHOIS · TLD · DNS · registrar)</span><span class="signal-pts">fused</span></div>
+          <div class="signal-row"><span class="signal-name">Live TLS certificate validity</span><span class="signal-pts">fused</span></div>
+          <div class="signal-row"><span class="signal-name">Typosquat / lookalike-brand detection</span><span class="signal-pts">fused</span></div>
+          <div class="signal-row"><span class="signal-name">Newly-registered domain flag</span><span class="signal-pts">fused</span></div>
+        </div>
+
+        <div class="tier-list">
+          <div class="tier-row"><span class="tier-badge tier-trusted">CLEAR</span><span class="tier-range">safe to proceed</span></div>
+          <div class="tier-row"><span class="tier-badge tier-caution">REVIEW</span><span class="tier-range">inspect before acting</span></div>
+          <div class="tier-row"><span class="tier-badge tier-high-risk">BLOCK</span><span class="tier-range">do not proceed</span></div>
+        </div>
+      </div>
+      <div class="code-block">
+<span class="c-key">{</span>
+  <span class="c-key">"domain":</span>  <span class="c-str">"paypa1.com"</span><span class="c-key">,</span>
+  <span class="c-key">"verdict":</span> <span class="c-tier">"BLOCK"</span><span class="c-key">,</span>
+  <span class="c-key">"score":</span>   <span class="c-num">12</span><span class="c-key">,</span>
+  <span class="c-key">"reasons":</span> <span class="c-key">[</span> <span class="c-str">"possible lookalike of paypal.com"</span> <span class="c-key">],</span>
+  <span class="c-key">"signals":</span> <span class="c-key">{</span>
+    <span class="c-key">"domainTrust":</span> <span class="c-key">{</span> <span class="c-key">"tier":</span> <span class="c-str">"HIGH_RISK"</span> <span class="c-key">},</span>
+    <span class="c-key">"tls":</span>         <span class="c-key">{</span> <span class="c-key">"reachable":</span> <span class="c-num">true</span><span class="c-key">,</span> <span class="c-key">"tier":</span> <span class="c-str">"VALID"</span> <span class="c-key">},</span>
+    <span class="c-key">"typosquat":</span>   <span class="c-key">{</span> <span class="c-key">"isLookalike":</span> <span class="c-num">true</span><span class="c-key">,</span> <span class="c-key">"nearestBrand":</span> <span class="c-str">"paypal.com"</span> <span class="c-key">}</span>
+  <span class="c-key">}</span>
+<span class="c-key">}</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── EmailTrust detail ── -->
+  <section class="api-section" id="emailtrust">
+    <div class="api-section-inner">
+      <div class="api-section-text">
+        <div class="api-section-route">GET https://api.trustsource.cc/emailtrust?domain=example.com</div>
+        <h2 class="api-section-title">EmailTrust</h2>
+        <p class="api-section-desc">
+          Grade a domain's email-authentication posture from DNS alone — SPF, DKIM, DMARC, BIMI, and MX. Returns an A–F grade, a <code style="color:var(--accent);">spoofable</code> flag, the parsed DMARC policy and SPF qualifier, and every misconfiguration. Use it to judge a sender before trusting an email, or to confirm your own outreach domain won't be silently rejected by Gmail, Yahoo, and Microsoft's 2026 authentication rules.
+        </p>
+
+        <div class="signal-list">
+          <div class="signal-row"><span class="signal-name">SPF policy &amp; qualifier</span><span class="signal-pts">-all / ~all</span></div>
+          <div class="signal-row"><span class="signal-name">DMARC enforcement (p=)</span><span class="signal-pts">none / quarantine / reject</span></div>
+          <div class="signal-row"><span class="signal-name">DKIM key presence</span><span class="signal-pts">best-effort</span></div>
+          <div class="signal-row"><span class="signal-name">BIMI &amp; MX records</span><span class="signal-pts">present?</span></div>
+        </div>
+
+        <div class="tier-list">
+          <div class="tier-row"><span class="tier-badge tier-trusted">A / B</span><span class="tier-range">enforced — not spoofable</span></div>
+          <div class="tier-row"><span class="tier-badge tier-caution">C / D</span><span class="tier-range">monitoring only — spoofable</span></div>
+          <div class="tier-row"><span class="tier-badge tier-high-risk">F</span><span class="tier-range">no authentication</span></div>
+        </div>
+      </div>
+      <div class="code-block">
+<span class="c-key">{</span>
+  <span class="c-key">"domain":</span>    <span class="c-str">"example.com"</span><span class="c-key">,</span>
+  <span class="c-key">"grade":</span>     <span class="c-tier">"C"</span><span class="c-key">,</span>
+  <span class="c-key">"spoofable":</span> <span class="c-num">true</span><span class="c-key">,</span>
+  <span class="c-key">"spf":</span>   <span class="c-key">{</span> <span class="c-key">"present":</span> <span class="c-num">true</span><span class="c-key">,</span> <span class="c-key">"qualifier":</span> <span class="c-str">"~all"</span> <span class="c-key">},</span>
+  <span class="c-key">"dmarc":</span> <span class="c-key">{</span> <span class="c-key">"present":</span> <span class="c-num">true</span><span class="c-key">,</span> <span class="c-key">"policy":</span> <span class="c-str">"none"</span> <span class="c-key">},</span>
+  <span class="c-key">"dkim":</span>  <span class="c-key">{</span> <span class="c-key">"present":</span> <span class="c-num">true</span> <span class="c-key">},</span>
+  <span class="c-key">"issues":</span> <span class="c-key">[</span> <span class="c-str">"dmarc_p_none_no_enforcement"</span> <span class="c-key">]</span>
+<span class="c-key">}</span>
+      </div>
+    </div>
+  </section>
+
   <!-- ── TrustScore detail ── -->
   <section class="api-section" id="trustscore">
     <div class="api-section-inner">

@@ -1,25 +1,23 @@
 import { Router, Request, Response } from "express";
 import { extractDomain, isUsableDomain } from "../lib/domain.js";
-import { scoreDomainTrust } from "../lib/domain-trust.js";
+import { checkMailAuth } from "../lib/mailauth.js";
 import { createTtlCache } from "../lib/cache.js";
 
 const router = Router();
 
-// 1 hour TTL — WHOIS/DNS change infrequently.
-const cache = createTtlCache(60 * 60 * 1000);
+// 6 hour TTL — mail-auth DNS records change infrequently.
+const cache = createTtlCache(6 * 60 * 60 * 1000);
 
-router.get("/trustscore", async (req: Request, res: Response) => {
+router.get("/emailtrust", async (req: Request, res: Response) => {
   const raw = (req.query.domain as string) || (req.query.url as string);
 
-  // Input presence + length guard (DNS max = 253 chars)
   if (!raw) {
     res.status(400).json({
       error:   "Missing parameter",
-      message: "Provide ?domain=example.com or ?url=https://example.com",
+      message: "Provide ?domain=example.com (the sender's domain)",
     });
     return;
   }
-
   if (raw.length > 253) {
     res.status(400).json({
       error:   "Invalid input",
@@ -28,17 +26,17 @@ router.get("/trustscore", async (req: Request, res: Response) => {
     return;
   }
 
-  const domain = extractDomain(raw);
-
+  // Accept an email address (user@domain) or a domain/URL; extract the domain.
+  const candidate = raw.includes("@") ? raw.split("@").pop()!.trim() : raw;
+  const domain = extractDomain(candidate);
   if (!isUsableDomain(domain)) {
     res.status(400).json({
       error:   "Invalid domain",
-      message: "Must be a valid public domain (e.g. example.com)",
+      message: "Must be a valid public domain or email address (e.g. example.com or user@example.com)",
     });
     return;
   }
 
-  // Return cached result if available
   const cached = cache.get(domain);
   if (cached) {
     res.json({ ...cached, meta: { ...(cached.meta as object), cached: true } });
@@ -46,10 +44,20 @@ router.get("/trustscore", async (req: Request, res: Response) => {
   }
 
   try {
-    const trust = await scoreDomainTrust(domain);
+    const auth = await checkMailAuth(domain);
 
     const result = {
-      ...trust,
+      domain,
+      grade:     auth.grade,
+      score:     auth.score,
+      maxScore:  100,
+      spoofable: auth.spoofable,
+      spf:       auth.spf,
+      dmarc:     auth.dmarc,
+      dkim:      auth.dkim,
+      bimi:      auth.bimi,
+      mx:        auth.mx,
+      issues:    auth.issues,
       meta: {
         checkedAt:  new Date().toISOString(),
         apiVersion: "1.0",
@@ -62,10 +70,11 @@ router.get("/trustscore", async (req: Request, res: Response) => {
     res.json(result);
 
   } catch (err) {
-    res.status(500).json({
-      error:   "Lookup failed",
+    res.status(502).json({
+      error:   "Email-trust check failed",
       domain,
       message: err instanceof Error ? err.message : "Unknown error",
+      meta: { checkedAt: new Date().toISOString(), apiVersion: "1.0" },
     });
   }
 });

@@ -1,12 +1,12 @@
 ---
 name: trustsource-domain
-description: Check a domain's trust score, TLS/SSL cert, HTTP security headers, and robots.txt/AI-bot policy before transacting with or trusting it. Four x402-paid checks in USDC, no API keys or signup.
+description: Vet a URL or domain before transacting with or trusting it — a one-call CLEAR/REVIEW/BLOCK safety verdict, email spoofability grading, trust scoring, TLS/SSL cert check, HTTP security headers, and robots.txt/AI-bot policy. Six x402-paid checks in USDC, no API keys or signup.
 license: MIT
 ---
 
 # TrustSource — Domain Verification for Agents
 
-TrustSource is a suite of four x402-paid HTTP APIs that let an agent verify any domain on demand. Each call costs $0.002–$0.003 in USDC on Base Mainnet, settled atomically per request via x402. No accounts. No signups. No API keys.
+TrustSource is a suite of six x402-paid HTTP APIs that let an agent verify any URL or domain on demand. Each call costs $0.002–$0.01 in USDC on Base Mainnet, settled atomically per request via x402. No accounts. No signups. No API keys.
 
 Use this skill any time you need to make a trust judgment about a URL or domain you did not source yourself — when an agent encounters a URL from an untrusted source, before sending a payment to a site, to confirm a TLS certificate is valid and not expiring, to grade a site's security headers, or to learn whether crawling is permitted. It applies to any request about checking, verifying, scoring, validating, or auditing a domain, website, URL, TLS certificate, SSL, HTTPS, security headers, robots.txt, or crawler permissions — even when the user does not name TrustSource explicitly.
 
@@ -14,10 +14,14 @@ Use this skill any time you need to make a trust judgment about a URL or domain 
 
 | Endpoint                   | Cost   | Use it when you need to know…                                        |
 | -------------------------- | ------ | -------------------------------------------------------------------- |
+| `GET /urlcheck?url=…`      | $0.01  | …a single CLEAR/REVIEW/BLOCK verdict on a URL before you act on it   |
+| `GET /emailtrust?domain=…` | $0.003 | …whether a sender domain can be spoofed (SPF/DKIM/DMARC grade)       |
 | `GET /trustscore?domain=…` | $0.003 | …how legitimate a domain is overall (age, registrar, DNS, TLD risk)  |
 | `GET /sslcheck?domain=…`   | $0.002 | …whether the TLS certificate is valid, trusted, and not expiring     |
 | `GET /headers?url=…`       | $0.003 | …how well-hardened a site is (HSTS, CSP, X-Frame-Options grade A+–F) |
 | `GET /robots?domain=…`     | $0.002 | …whether the site allows you (or AI bots in general) to crawl it     |
+
+**Fast path:** call `/urlcheck` first for one go/no-go verdict; drill into `/trustscore`, `/sslcheck`, `/headers`, or `/robots` when you need the underlying detail.
 
 **Base URL:** `https://api.trustsource.cc` **OpenAPI spec:** `https://api.trustsource.cc/openapi.json` **Network:** Base Mainnet (chain ID 8453), USDC settlement
 

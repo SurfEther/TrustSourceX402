@@ -1,6 +1,6 @@
 # TrustSource API
 
-x402-powered intelligence APIs for AI agents. Pay per use, no API keys, no accounts.
+x402-powered verification APIs for AI agents — URL safety, email authentication, domain trust, SSL/TLS, security headers, robots.txt. Pay per use, no API keys, no accounts.
 
 ## Quick Start
 
@@ -71,6 +71,66 @@ Get testnet USDC: https://faucet.circle.com (select Base Sepolia)
 
 ## API Reference
 
+### `GET /urlcheck`
+One composite **CLEAR / REVIEW / BLOCK** safety verdict on any URL, fusing domain trust, a live TLS check, and typosquat/lookalike detection.
+
+**Payment:** 0.01 USDC per call (via x402)
+
+**Params:**
+- `?url=https://example.com` — URL to vet
+- `?domain=example.com` — bare domain (alternative)
+
+**Response:**
+```json
+{
+  "domain": "paypa1.com",
+  "verdict": "BLOCK",
+  "score": 12,
+  "maxScore": 100,
+  "reasons": ["possible lookalike of paypal.com (homoglyph_substitution, confidence 0.90)"],
+  "signals": {
+    "domainTrust": { "score": 12, "tier": "HIGH_RISK", "ageDays": 3, "newlyRegistered": true },
+    "tls":         { "reachable": true, "valid": true, "tier": "VALID", "daysRemaining": 60 },
+    "typosquat":   { "isLookalike": true, "nearestBrand": "paypal.com", "technique": "homoglyph_substitution", "confidence": 0.9 }
+  },
+  "meta": { "checkedAt": "...", "apiVersion": "1.0", "paidWith": "x402/USDC", "cached": false }
+}
+```
+
+**Verdicts:** `CLEAR` (safe) · `REVIEW` (inspect before acting) · `BLOCK` (do not proceed)
+
+---
+
+### `GET /emailtrust`
+Email-authentication posture grade (SPF/DKIM/DMARC/BIMI/MX) — is this sender domain spoofable?
+
+**Payment:** 0.003 USDC per call (via x402)
+
+**Params:**
+- `?domain=example.com` — sender domain (or `user@example.com`)
+
+**Response:**
+```json
+{
+  "domain": "example.com",
+  "grade": "C",
+  "score": 45,
+  "maxScore": 100,
+  "spoofable": true,
+  "spf":   { "present": true, "qualifier": "~all", "multiple": false },
+  "dmarc": { "present": true, "policy": "none", "pct": 100, "rua": true },
+  "dkim":  { "present": true, "selectorsFound": ["default"] },
+  "bimi":  false,
+  "mx":    ["mail.example.com"],
+  "issues": ["dmarc_p_none_no_enforcement"],
+  "meta": { "checkedAt": "...", "apiVersion": "1.0", "paidWith": "x402/USDC", "cached": false }
+}
+```
+
+**Grades:** `A`/`B` = enforced, not spoofable · `C`/`D` = monitoring only, spoofable · `F` = no authentication
+
+---
+
 ### `GET /trustscore`
 Returns a 0–100 trust score for any domain.
 
@@ -125,13 +185,21 @@ trustsource/
 │   ├── server.ts          # Express app + x402 middleware, rate limiting, logging
 │   ├── openapi.ts         # OpenAPI 3.1 spec served at /openapi.json
 │   ├── lib/
-│   │   └── net-guard.ts   # Shared SSRF guard (private-IP checks, resolve + pin)
+│   │   ├── net-guard.ts   # Shared SSRF guard (private-IP checks, resolve + pin)
+│   │   ├── domain.ts      # Shared domain extraction/validation
+│   │   ├── cache.ts       # Shared in-memory TTL cache
+│   │   ├── domain-trust.ts # Domain trust scoring (used by /trustscore + /urlcheck)
+│   │   ├── tls-check.ts   # TLS handshake + cert scoring (used by /sslcheck + /urlcheck)
+│   │   ├── typosquat.ts   # Lookalike/typosquat detection (used by /urlcheck)
+│   │   └── mailauth.ts    # SPF/DKIM/DMARC/BIMI/MX analysis (used by /emailtrust)
 │   └── routes/
+│       ├── urlcheck.ts    # Composite CLEAR/REVIEW/BLOCK URL verdict
+│       ├── emailtrust.ts  # Email-auth posture grade
 │       ├── trustscore.ts  # WHOIS + DNS + TLD + registrar scoring
 │       ├── sslcheck.ts    # Live TLS handshake + certificate scoring
 │       ├── headers.ts     # HTTP security-header audit
 │       └── robots.ts      # robots.txt + AI-bot policy detection
-├── mcp-server/            # MCP server wrapping the four APIs as tools
+├── mcp-server/            # MCP server wrapping the six APIs as tools
 ├── public/                # Landing page
 ├── .env.example
 ├── .env                   # Your config (git-ignored)
@@ -147,8 +215,12 @@ trustsource/
 - [x] SslCheck API — TLS/SSL certificate intelligence
 - [x] Headers API — HTTP security-header audit
 - [x] Robots API — robots.txt + AI-bot policy detection
+- [x] **UrlCheck API — composite CLEAR/REVIEW/BLOCK URL safety verdict**
+- [x] **EmailTrust API — SPF/DKIM/DMARC/BIMI/MX spoofability grade**
 - [x] OpenAPI spec at `/openapi.json`
 - [x] Bazaar / Agentic.Market discovery extension
-- [x] MCP server (`trustsource-mcp`) wrapping all four APIs
-- [ ] Wallet Reputation API
-- [ ] Additional recon endpoints (subdomains, IP intelligence)
+- [x] MCP server (`trustsource-mcp`) wrapping all six APIs
+- [ ] `/safefetch` — injection-safe content firewall (flagship)
+- [ ] `/phishcheck` — typosquat + Certificate-Transparency detection
+- [ ] `/kyb` — official-registry business-identity verification
+- [ ] ResearchOracle (reshaped) — verification / source-trust oracle

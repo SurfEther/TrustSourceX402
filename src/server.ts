@@ -11,6 +11,8 @@ import trustscoreRouter from "./routes/trustscore.js";
 import sslcheckRouter   from "./routes/sslcheck.js";
 import headersRouter    from "./routes/headers.js";
 import robotsRouter     from "./routes/robots.js";
+import urlcheckRouter   from "./routes/urlcheck.js";
+import emailtrustRouter from "./routes/emailtrust.js";
 import openApiRouter    from "./openapi.js";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -28,7 +30,7 @@ const NETWORK     = (process.env.NETWORK || "eip155:84532") as `${string}:${stri
 const FACILITATOR = process.env.FACILITATOR_URL || "https://x402.org/facilitator";
 const IS_MAINNET  = NETWORK === "eip155:8453";
 
-const PAID_PATHS = new Set(["/trustscore", "/sslcheck", "/headers", "/robots"]);
+const PAID_PATHS = new Set(["/trustscore", "/sslcheck", "/headers", "/robots", "/urlcheck", "/emailtrust"]);
 
 if (!PAY_TO || !PAY_TO.startsWith("0x")) {
   console.error("❌  PAY_TO_ADDRESS is missing or invalid in .env");
@@ -170,9 +172,21 @@ app.get("/", (req, res) => {
   }
   res.json({
     name:        "TrustSource API",
-    description: "Domain trust, SSL, security, and crawler-policy intelligence for AI agents — powered by x402",
-    version:     "0.3.0",
+    description: "Domain trust, SSL, security, crawler-policy, URL-safety, and email-auth intelligence for AI agents — powered by x402",
+    version:     "0.4.0",
     endpoints: {
+      "GET /urlcheck": {
+        description: "Composite URL safety verdict — CLEAR/REVIEW/BLOCK fusing trust + TLS + typosquat",
+        price:       "$0.01 USDC",
+        params:      { url: "string" },
+        example:     "/urlcheck?url=https://example.com",
+      },
+      "GET /emailtrust": {
+        description: "Email-auth posture grade — SPF/DKIM/DMARC/BIMI/MX, is this sender spoofable",
+        price:       "$0.003 USDC",
+        params:      { domain: "string" },
+        example:     "/emailtrust?domain=example.com",
+      },
       "GET /trustscore": {
         description: "Domain trust and safety scoring — WHOIS, DNS, TLD, registrar",
         price:       "$0.003 USDC",
@@ -226,6 +240,46 @@ app.use(openApiRouter);
 app.use(
   paymentMiddleware(
     {
+      "GET /urlcheck": {
+        accepts: [{ scheme: "exact", price: "$0.01", network: NETWORK, payTo: PAY_TO }],
+        description: "Get a single CLEAR / REVIEW / BLOCK safety verdict on any URL before an agent clicks, fetches, submits data to, or transacts with it. Fuses domain trust (WHOIS age, TLD risk, DNS presence, registrar), a live TLS certificate check, and typosquat/lookalike-brand detection into one graded 0–100 answer with human-readable reasons — the go/no-go an agent can gate on instead of running and interpreting several separate checks itself.",
+        mimeType: "application/json",
+        extensions: {
+          ...declareDiscoveryExtension({
+            input: { url: "https://example.com" },
+            inputSchema: {
+              properties: { url: { type: "string", description: "URL or domain to vet (e.g. https://example.com or example.com)." } },
+              required: ["url"],
+            },
+            output: {
+              example: {
+                domain: "example.com", verdict: "CLEAR", score: 90,
+                signals: { domainTrust: { tier: "TRUSTED" }, tls: { tier: "VALID" }, typosquat: { isLookalike: false } },
+              },
+            },
+          }),
+        },
+      },
+      "GET /emailtrust": {
+        accepts: [{ scheme: "exact", price: "$0.003", network: NETWORK, payTo: PAY_TO }],
+        description: "Grade a domain's email-authentication posture (SPF, DKIM, DMARC, BIMI, MX) and tell an agent whether the sender can be spoofed. Returns an A–F grade, a `spoofable` flag, the parsed DMARC policy and SPF qualifier, and specific misconfiguration issues. Use to judge a sender domain before trusting an email, or to confirm your own outreach domain won't be silently rejected by Gmail/Yahoo/Microsoft's 2026 authentication rules.",
+        mimeType: "application/json",
+        extensions: {
+          ...declareDiscoveryExtension({
+            input: { domain: "example.com" },
+            inputSchema: {
+              properties: { domain: { type: "string", description: "Sender domain or email address to grade (e.g. example.com or user@example.com)." } },
+              required: ["domain"],
+            },
+            output: {
+              example: {
+                domain: "example.com", grade: "C", spoofable: true,
+                dmarc: { present: true, policy: "none" }, spf: { present: true, qualifier: "~all" },
+              },
+            },
+          }),
+        },
+      },
       "GET /trustscore": {
         accepts: [{ scheme: "exact", price: "$0.003", network: NETWORK, payTo: PAY_TO }],
         description: "Verify whether a domain is legitimate and safe before transacting with it. Returns a 0–100 trust score and tier (TRUSTED/MODERATE/CAUTION/HIGH_RISK) derived from WHOIS domain age, TLD risk, DNS presence, and registrar reputation. Use to vet an unfamiliar URL, redirect target, or payment destination before sending USDC or trusting its content.",
@@ -312,6 +366,8 @@ app.use(
 
 // ─── Paid routes ──────────────────────────────────────────────────────────────
 
+app.use(urlcheckRouter);
+app.use(emailtrustRouter);
 app.use(trustscoreRouter);
 app.use(sslcheckRouter);
 app.use(headersRouter);
@@ -339,6 +395,8 @@ app.listen(PORT, () => {
 ║    GET /              → Landing / API info (free)    ║
 ║    GET /health        → Health check     (free)      ║
 ║    GET /openapi.json  → OpenAPI spec     (free)      ║
+║    GET /urlcheck      → URL safety verdict (0.010 USDC)║
+║    GET /emailtrust    → Email-auth grade   (0.003 USDC)║
 ║    GET /trustscore    → Domain score     (0.003 USDC)║
 ║    GET /sslcheck      → SSL/TLS check    (0.002 USDC)║
 ║    GET /headers       → Header audit     (0.003 USDC)║

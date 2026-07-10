@@ -2,11 +2,13 @@
 /**
  * TrustSource MCP Server
  *
- * Exposes the four TrustSource x402-paid HTTP APIs as MCP tools:
- *   - trustsource_score    — domain trust scoring ($0.003 USDC)
- *   - trustsource_ssl      — TLS/SSL certificate intelligence ($0.002 USDC)
- *   - trustsource_headers  — HTTP security header audit ($0.003 USDC)
- *   - trustsource_robots   — robots.txt + AI bot policy ($0.002 USDC)
+ * Exposes the TrustSource x402-paid HTTP APIs as MCP tools:
+ *   - trustsource_score      — domain trust scoring ($0.003 USDC)
+ *   - trustsource_ssl        — TLS/SSL certificate intelligence ($0.002 USDC)
+ *   - trustsource_headers    — HTTP security header audit ($0.003 USDC)
+ *   - trustsource_robots     — robots.txt + AI bot policy ($0.002 USDC)
+ *   - trustsource_urlcheck   — composite URL safety verdict ($0.01 USDC)
+ *   - trustsource_emailtrust — email-auth posture grade ($0.003 USDC)
  *
  * Payment is per-call in USDC on Base Mainnet via the x402 protocol.
  * The caller's wallet (set via WALLET_PRIVATE_KEY) must hold USDC and
@@ -122,7 +124,7 @@ async function callApi(path: string, params: Record<string, string>): Promise<To
 
 const server = new McpServer({
   name: "trustsource",
-  version: "0.1.7",
+  version: "0.1.8",
 });
 
 // Tool 1: TrustScore — domain trust scoring
@@ -179,6 +181,34 @@ server.tool(
       .describe("Domain to check, e.g. 'example.com'"),
   },
   async ({ domain }) => callApi("/robots", { domain }),
+);
+
+// Tool 5: UrlCheck — composite CLEAR/REVIEW/BLOCK URL safety verdict
+server.tool(
+  "trustsource_urlcheck",
+  "Get a single CLEAR / REVIEW / BLOCK safety verdict on any URL before acting on it. Fuses domain trust (WHOIS age, TLD risk, DNS presence, registrar), a live TLS certificate check, and typosquat / lookalike-brand detection into one graded 0–100 answer with human-readable reasons. Call this before clicking, fetching, submitting data to, or paying a link you did not source yourself — it is the go/no-go an agent can gate on. Cost: $0.01 USDC per call. Cached 1 hour server-side.",
+  {
+    url: z
+      .string()
+      .min(1)
+      .max(2048)
+      .describe("URL or domain to vet, e.g. 'https://example.com' or 'example.com'"),
+  },
+  async ({ url }) => callApi("/urlcheck", { url }),
+);
+
+// Tool 6: EmailTrust — SPF/DKIM/DMARC/BIMI/MX posture grade
+server.tool(
+  "trustsource_emailtrust",
+  "Grade a domain's email-authentication posture (SPF, DKIM, DMARC, BIMI, MX) and learn whether the sender can be spoofed. Returns an A–F grade, a `spoofable` flag, the parsed DMARC policy and SPF qualifier, and specific misconfiguration issues. Use to judge a sender domain before trusting an email, or to confirm your own outreach domain won't be silently rejected by Gmail/Yahoo/Microsoft's 2026 authentication rules. Cost: $0.003 USDC per call. Cached 6 hours server-side.",
+  {
+    domain: z
+      .string()
+      .min(1)
+      .max(253)
+      .describe("Sender domain or email address, e.g. 'example.com' or 'user@example.com'"),
+  },
+  async ({ domain }) => callApi("/emailtrust", { domain }),
 );
 
 // ─── Boot ────────────────────────────────────────────────────────────────────

@@ -6,8 +6,8 @@ const spec = {
   openapi: "3.1.0",
   info: {
     title:       "TrustSource API",
-    version:     "0.3.0",
-    description: "x402-powered domain, SSL, security, and crawler-policy intelligence for AI agents. Four endpoints return structured trust intelligence on any domain — no API keys, no accounts. Pay per use with USDC via the x402 protocol on Base Mainnet.",
+    version:     "0.4.0",
+    description: "x402-powered domain, SSL, security, and crawler-policy intelligence for AI agents. Six endpoints return structured trust intelligence on any domain or URL — no API keys, no accounts. Pay per use with USDC via the x402 protocol on Base Mainnet.",
     contact: {
       url: "https://trustsource.cc",
     },
@@ -80,6 +80,63 @@ const spec = {
               },
             },
           },
+        },
+      },
+    },
+    "/urlcheck": {
+      get: {
+        operationId: "getUrlCheck",
+        security:    [{ x402: [] }],
+        summary:     "Composite URL safety verdict",
+        description: [
+          "One call → one CLEAR / REVIEW / BLOCK verdict on any URL, fusing domain",
+          "trust (WHOIS age, TLD risk, DNS, registrar), a live TLS certificate check,",
+          "and typosquat / lookalike-brand detection into a single graded 0–100 answer",
+          "with human-readable reasons. Use before an agent clicks, fetches, submits",
+          "data to, or transacts with a link — the go/no-go it can gate on.",
+          "",
+          "**Payment:** 0.01 USDC per call via x402 protocol (Base Mainnet).",
+          "**Caching:** Results cached for 1 hour per domain.",
+        ].join("\n"),
+        tags: ["Trust"],
+        parameters: [
+          { name: "url",    in: "query", required: false, description: "URL to vet (e.g. https://example.com)", schema: { type: "string", maxLength: 2048, example: "https://example.com" } },
+          { name: "domain", in: "query", required: false, description: "Bare domain to vet (alternative to url)", schema: { type: "string", maxLength: 253, example: "example.com" } },
+        ],
+        responses: {
+          "200": { description: "Verdict returned", content: { "application/json": { schema: { $ref: "#/components/schemas/UrlCheckResponse" } } } },
+          "400": { description: "Invalid or missing url/domain parameter" },
+          "402": { description: "Payment required — 0.01 USDC via x402", headers: { "PAYMENT-REQUIRED": { description: "Base64-encoded JSON payment requirements", schema: { type: "string" } } } },
+          "429": { description: "Rate limit exceeded" },
+          "500": { description: "URL check failed" },
+        },
+      },
+    },
+    "/emailtrust": {
+      get: {
+        operationId: "getEmailTrust",
+        security:    [{ x402: [] }],
+        summary:     "Email-authentication posture grade",
+        description: [
+          "Grade a domain's email-auth posture (SPF, DKIM, DMARC, BIMI, MX) and report",
+          "whether the sender can be spoofed. Returns an A–F grade, a `spoofable` flag,",
+          "the parsed DMARC policy and SPF qualifier, and specific misconfiguration",
+          "issues. Judge a sender domain before trusting an email, or confirm your own",
+          "domain won't be silently rejected by Gmail/Yahoo/Microsoft's 2026 rules.",
+          "",
+          "**Payment:** 0.003 USDC per call via x402 protocol (Base Mainnet).",
+          "**Caching:** Results cached for 6 hours per domain.",
+        ].join("\n"),
+        tags: ["Trust"],
+        parameters: [
+          { name: "domain", in: "query", required: true, description: "Sender domain or email address (e.g. example.com or user@example.com)", schema: { type: "string", maxLength: 253, example: "example.com" } },
+        ],
+        responses: {
+          "200": { description: "Mail-auth grade returned", content: { "application/json": { schema: { $ref: "#/components/schemas/EmailTrustResponse" } } } },
+          "400": { description: "Invalid or missing domain parameter" },
+          "402": { description: "Payment required — 0.003 USDC via x402", headers: { "PAYMENT-REQUIRED": { description: "Base64-encoded JSON payment requirements", schema: { type: "string" } } } },
+          "429": { description: "Rate limit exceeded" },
+          "502": { description: "DNS lookup failed" },
         },
       },
     },
@@ -358,6 +415,110 @@ const spec = {
   },
   components: {
     schemas: {
+      UrlCheckResponse: {
+        type:     "object",
+        required: ["domain", "verdict", "score", "maxScore", "reasons", "signals", "meta"],
+        properties: {
+          domain:  { type: "string", example: "example.com" },
+          verdict: { type: "string", enum: ["CLEAR", "REVIEW", "BLOCK"], description: "Go/no-go: CLEAR=safe, REVIEW=inspect before acting, BLOCK=do not proceed", example: "CLEAR" },
+          score:    { type: "integer", description: "Composite safety score (0–100; secondary to verdict)", example: 90 },
+          maxScore: { type: "integer", example: 100 },
+          reasons:  { type: "array", items: { type: "string" }, description: "Human-readable factors behind the verdict" },
+          signals: {
+            type: "object",
+            properties: {
+              domainTrust: {
+                type: "object",
+                properties: {
+                  score:           { type: "integer" },
+                  tier:            { type: "string", enum: ["TRUSTED", "MODERATE", "CAUTION", "HIGH_RISK"] },
+                  ageDays:         { type: "integer", description: "Domain age in days (-1 if unknown)" },
+                  registrar:       { type: "string" },
+                  tld:             { type: "string" },
+                  hasDns:          { type: "boolean" },
+                  newlyRegistered: { type: "boolean", description: "Registered within the last 30 days" },
+                },
+              },
+              tls: {
+                type: "object",
+                properties: {
+                  reachable:     { type: "boolean", description: "HTTPS/TLS reachable on port 443" },
+                  valid:         { type: "boolean" },
+                  tier:          { type: ["string", "null"], enum: ["VALID", "WEAK", "EXPIRING", "EXPIRED", "UNTRUSTED", "INVALID", null] },
+                  daysRemaining: { type: ["integer", "null"] },
+                },
+              },
+              typosquat: {
+                type: "object",
+                properties: {
+                  isLookalike:  { type: "boolean" },
+                  nearestBrand: { type: ["string", "null"], description: "Legitimate brand domain being impersonated" },
+                  technique:    { type: ["string", "null"], example: "homoglyph_substitution" },
+                  confidence:   { type: "number", description: "0–1" },
+                },
+              },
+            },
+          },
+          meta: {
+            type: "object",
+            properties: {
+              checkedAt:  { type: "string", format: "date-time" },
+              apiVersion: { type: "string" },
+              paidWith:   { type: "string", example: "x402/USDC" },
+              cached:     { type: "boolean" },
+            },
+          },
+        },
+      },
+      EmailTrustResponse: {
+        type:     "object",
+        required: ["domain", "grade", "score", "maxScore", "spoofable", "spf", "dmarc", "dkim", "bimi", "mx", "issues", "meta"],
+        properties: {
+          domain:    { type: "string", example: "example.com" },
+          grade:     { type: "string", enum: ["A", "B", "C", "D", "F"], description: "Email-auth posture grade (A=enforced/hardened, F=no auth)" },
+          score:     { type: "integer", example: 45 },
+          maxScore:  { type: "integer", example: 100 },
+          spoofable: { type: "boolean", description: "True unless DMARC enforcement (quarantine/reject at 100%) is in place" },
+          spf: {
+            type: "object",
+            properties: {
+              present:   { type: "boolean" },
+              qualifier: { type: ["string", "null"], enum: ["-all", "~all", "?all", "+all", null], description: "SPF 'all' mechanism qualifier" },
+              multiple:  { type: "boolean", description: "More than one SPF record (a permerror)" },
+              record:    { type: ["string", "null"] },
+            },
+          },
+          dmarc: {
+            type: "object",
+            properties: {
+              present: { type: "boolean" },
+              policy:  { type: ["string", "null"], enum: ["none", "quarantine", "reject", null] },
+              pct:     { type: "integer", description: "Percentage of mail the policy applies to" },
+              rua:     { type: "boolean", description: "Aggregate-report address configured" },
+            },
+          },
+          dkim: {
+            type: "object",
+            properties: {
+              present:        { type: "boolean" },
+              selectorsFound: { type: "array", items: { type: "string" } },
+              note:           { type: "string", description: "Best-effort — selector may be custom" },
+            },
+          },
+          bimi:   { type: "boolean" },
+          mx:     { type: "array", items: { type: "string" } },
+          issues: { type: "array", items: { type: "string" }, description: "Machine-readable misconfiguration flags", example: ["dmarc_p_none_no_enforcement", "spf_neutral_only"] },
+          meta: {
+            type: "object",
+            properties: {
+              checkedAt:  { type: "string", format: "date-time" },
+              apiVersion: { type: "string" },
+              paidWith:   { type: "string", example: "x402/USDC" },
+              cached:     { type: "boolean" },
+            },
+          },
+        },
+      },
       TrustScoreResponse: {
         type:     "object",
         required: ["domain", "score", "maxScore", "tier", "breakdown", "details", "meta"],
@@ -654,7 +815,7 @@ const spec = {
         properties: {
           name:        { type: "string", example: "TrustSource API" },
           description: { type: "string" },
-          version:     { type: "string", example: "0.3.0" },
+          version:     { type: "string", example: "0.4.0" },
           endpoints:   { type: "object" },
           payment:     { type: "object" },
           links:       { type: "object" },

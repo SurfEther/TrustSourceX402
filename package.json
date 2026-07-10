@@ -1,6 +1,6 @@
 {
   "name": "trustsource",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "x402-powered intelligence APIs for AI agents",
   "type": "module",
   "scripts": {

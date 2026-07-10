@@ -68,6 +68,10 @@ registerExactEvmScheme(resourceServer);
 
 const app = express();
 
+// Don't advertise the framework. Our own /headers endpoint penalizes sites that
+// expose X-Powered-By, so we shouldn't leak it ourselves.
+app.disable("x-powered-by");
+
 // Public agent-facing API with no cookies/credentials. Reflect any origin but
 // forbid credentialed cross-origin requests and non-GET methods.
 app.use(cors({

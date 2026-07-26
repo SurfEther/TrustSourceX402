@@ -1,0 +1,4 @@
+Contact: mailto:hello@trustsource.cc
+Expires: 2027-07-09T00:00:00.000Z
+Preferred-Languages: en
+Canonical: https://trustsource.cc/.well-known/security.txt

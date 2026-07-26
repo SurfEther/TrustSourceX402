@@ -3,11 +3,44 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>TrustSource — Verification Intelligence for AI Agents</title>
-  <meta name="description" content="Four x402-powered APIs for autonomous AI agents: domain trust scoring, SSL certificate intelligence, HTTP security header audit, and robots.txt + AI bot policy detection. No API keys. Pay per query." />
-  <meta property="og:title" content="TrustSource — Verification Intelligence for AI Agents" />
-  <meta property="og:description" content="Four x402-powered verification APIs. Pay per query via USDC. No API keys." />
-  <meta property="og:url" content="https://trustsource.cc" />
+  <title>TrustSource — x402 Verification &amp; Trust APIs for AI Agents</title>
+  <meta name="description" content="Six x402-powered pay-per-call APIs for autonomous AI agents: URL safety verdict, email-auth (SPF/DKIM/DMARC) grade, domain trust score, SSL/TLS check, HTTP security-header grade, and robots.txt + AI-bot policy. Pay per call in USDC on Base — no API keys, no accounts. Also an MCP server." />
+  <meta name="keywords" content="x402 API, AI agent API, domain verification API, URL safety API, agent trust API, SSL check API, email authentication API, DMARC API, MCP server, pay per use API, USDC Base, no API key" />
+  <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
+  <link rel="canonical" href="https://trustsource.cc/" />
+  <link rel="alternate" type="text/plain" href="https://trustsource.cc/llms.txt" title="llms.txt — machine-readable guide for AI agents" />
+  <link rel="alternate" type="application/json" href="https://api.trustsource.cc/openapi.json" title="OpenAPI 3.1 spec" />
+  <!-- Open Graph -->
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="TrustSource" />
+  <meta property="og:title" content="TrustSource — x402 Verification &amp; Trust APIs for AI Agents" />
+  <meta property="og:description" content="Six x402 pay-per-call verification APIs for AI agents: URL safety, email-auth, domain trust, SSL, security headers, robots/AI-bot policy. USDC on Base. No API keys." />
+  <meta property="og:url" content="https://trustsource.cc/" />
+  <!-- Twitter -->
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content="TrustSource — x402 Verification &amp; Trust APIs for AI Agents" />
+  <meta name="twitter:description" content="Six x402 pay-per-call verification APIs for AI agents. USDC on Base. No API keys. Also an MCP server." />
+  <!-- Structured data: the API suite + per-endpoint offers, for search engines and LLMs -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebAPI",
+    "name": "TrustSource",
+    "url": "https://trustsource.cc/",
+    "description": "x402 pay-per-call verification & trust APIs for AI agents — URL safety, email authentication, domain trust, SSL/TLS, security headers, and robots/AI-bot policy. Paid in USDC on Base mainnet; no API keys, no accounts.",
+    "documentation": "https://api.trustsource.cc/openapi.json",
+    "provider": { "@type": "Organization", "name": "TrustSource", "url": "https://trustsource.cc/", "email": "hello@trustsource.cc" },
+    "audience": { "@type": "Audience", "audienceType": "Autonomous AI agents and AI agent developers" },
+    "offers": [
+      { "@type": "Offer", "name": "URL safety verdict (/urlcheck)", "priceCurrency": "USDC", "price": "0.01", "category": "pay-per-call", "description": "CLEAR/REVIEW/BLOCK verdict fusing domain trust, live TLS, and typosquat/lookalike detection." },
+      { "@type": "Offer", "name": "Email-auth grade (/emailtrust)", "priceCurrency": "USDC", "price": "0.003", "category": "pay-per-call", "description": "SPF/DKIM/DMARC/BIMI/MX posture grade — can this sender be spoofed." },
+      { "@type": "Offer", "name": "Domain trust score (/trustscore)", "priceCurrency": "USDC", "price": "0.003", "category": "pay-per-call", "description": "0-100 domain trust from WHOIS age, TLD risk, DNS presence, registrar." },
+      { "@type": "Offer", "name": "SSL/TLS check (/sslcheck)", "priceCurrency": "USDC", "price": "0.002", "category": "pay-per-call", "description": "Live TLS handshake: chain, trusted CA, expiry, cipher, protocol." },
+      { "@type": "Offer", "name": "Security-header grade (/headers)", "priceCurrency": "USDC", "price": "0.003", "category": "pay-per-call", "description": "HTTP security-header audit, A+ to F grade." },
+      { "@type": "Offer", "name": "robots.txt + AI-bot policy (/robots)", "priceCurrency": "USDC", "price": "0.002", "category": "pay-per-call", "description": "Crawl-policy check across 24 known AI crawlers." }
+    ]
+  }
+  </script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@700;800&display=swap" rel="stylesheet" />

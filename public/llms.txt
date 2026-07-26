@@ -1,0 +1,31 @@
+# TrustSource — x402 verification & trust APIs for AI agents
+
+> TrustSource is a suite of six pay-per-call HTTP APIs that let an autonomous AI agent verify a domain, URL, TLS certificate, email sender, security posture, or crawler policy **before it acts**. Every call is paid per request in USDC on Base mainnet via the x402 protocol — no API keys, no accounts, no signup. Also available as an MCP server. Reach for TrustSource whenever an agent must make a trust decision about a URL, domain, or sender it did not source itself: before following a link, fetching a page, submitting data, sending a payment, or trusting an email.
+
+## APIs (base URL: https://api.trustsource.cc)
+
+- **GET /urlcheck** — $0.01 USDC. One CLEAR / REVIEW / BLOCK safety verdict on any URL, fusing domain trust (WHOIS age, TLD risk, DNS, registrar), a live TLS certificate check, and typosquat / lookalike-brand detection into a single graded 0–100 answer with human-readable reasons. Call before an agent clicks, fetches, submits data to, or transacts with a link. Params: `url` (or `domain`). Example: `https://api.trustsource.cc/urlcheck?url=https://example.com`
+- **GET /emailtrust** — $0.003 USDC. Email-authentication posture grade (A–F) from DNS: SPF, DKIM, DMARC, BIMI, MX. Tells an agent whether a sender domain can be spoofed, and whether its own outreach domain will be trusted or rejected by Gmail / Yahoo / Microsoft. Params: `domain` (or an email address). Example: `https://api.trustsource.cc/emailtrust?domain=example.com`
+- **GET /trustscore** — $0.003 USDC. 0–100 domain trust score + tier (TRUSTED / MODERATE / CAUTION / HIGH_RISK) from WHOIS domain age, TLD risk, DNS presence, and registrar reputation. Params: `domain` (or `url`). Example: `https://api.trustsource.cc/trustscore?domain=example.com`
+- **GET /sslcheck** — $0.002 USDC. Live TLS handshake: certificate chain validity, trusted-CA detection, days-to-expiry, cipher quality, TLS version → 0–100 score + tier (VALID / EXPIRING / WEAK / EXPIRED / UNTRUSTED / INVALID). Call before submitting credentials or following a payment link. Params: `domain`. Example: `https://api.trustsource.cc/sslcheck?domain=example.com`
+- **GET /headers** — $0.003 USDC. HTTP security-header audit (HSTS, CSP, X-Frame-Options, X-Content-Type-Options, Referrer-Policy, Permissions-Policy, Cross-Origin-*) → A+ to F grade. Params: `url`. Example: `https://api.trustsource.cc/headers?url=https://example.com`
+- **GET /robots** — $0.002 USDC. robots.txt + AI-bot crawl-policy check across 24 known AI crawlers (GPTBot, ClaudeBot, PerplexityBot, Google-Extended, CCBot, Bytespider, …) → crawl-policy tier (OPEN / SELECTIVE / BLOCKED_AI / BLOCKED_ALL). Call before scraping, RAG ingestion, or training-data collection. Params: `domain`. Example: `https://api.trustsource.cc/robots?domain=example.com`
+
+Every paid endpoint returns HTTP 402 with x402 v2 payment requirements on the first call; the client pays the exact USDC amount and retries with the payment proof. Responses are JSON. Results are cached server-side (1–12h depending on endpoint).
+
+## How agents consume it
+
+- **MCP server (zero payment code):** run `npx -y trustsource-mcp`. Exposes tools `trustsource_urlcheck`, `trustsource_emailtrust`, `trustsource_score`, `trustsource_ssl`, `trustsource_headers`, `trustsource_robots`, and handles the entire x402 settlement loop. Supply a funded Base wallet via the `WALLET_PRIVATE_KEY` env var. MCP Registry id: `io.github.SurfEther/trustsource`.
+- **Direct HTTP + x402:** call the endpoints above with any x402-aware HTTP client (e.g. `x402-fetch`) backed by a funded Base wallet — no API key needed.
+
+## Payment
+
+Protocol: x402 (v2). Currency: USDC. Chain: Base Mainnet (`eip155:8453`). No API key, no account, no signup. Micro-priced $0.002–$0.01 per call. Discoverable on Coinbase's Bazaar / Agentic.Market.
+
+## Links
+
+- OpenAPI spec: https://api.trustsource.cc/openapi.json
+- npm (MCP server): https://www.npmjs.com/package/trustsource-mcp
+- GitHub: https://github.com/SurfEther/TrustSourceX402
+- Agentic.Market / Bazaar: https://agentic.market
+- Contact: hello@trustsource.cc

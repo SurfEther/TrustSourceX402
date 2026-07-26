@@ -237,6 +237,20 @@ app.get("/health", (_req, res) => {
   res.json({ status: "ok", timestamp: new Date().toISOString() });
 });
 
+// ─── Discovery / crawl files (free, served for both trustsource.cc and the API
+//     subdomain so LLM crawlers + agents can find the tools). Explicit routes
+//     only — we never expose the rest of public/ or the repo. ─────────────────
+const staticFile =
+  (relPath: string, contentType: string) =>
+  (_req: express.Request, res: express.Response) => {
+    res.type(contentType).sendFile(path.resolve(relPath));
+  };
+
+app.get("/llms.txt",                 staticFile("public/llms.txt",                 "text/plain; charset=utf-8"));
+app.get("/robots.txt",               staticFile("public/robots.txt",               "text/plain; charset=utf-8"));
+app.get("/sitemap.xml",              staticFile("public/sitemap.xml",              "application/xml; charset=utf-8"));
+app.get("/.well-known/security.txt", staticFile("public/.well-known/security.txt", "text/plain; charset=utf-8"));
+
 app.use(openApiRouter);
 
 // ─── x402 Paywall ─────────────────────────────────────────────────────────────

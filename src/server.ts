@@ -13,6 +13,7 @@ import headersRouter    from "./routes/headers.js";
 import robotsRouter     from "./routes/robots.js";
 import urlcheckRouter   from "./routes/urlcheck.js";
 import emailtrustRouter from "./routes/emailtrust.js";
+import safefetchRouter  from "./routes/safefetch.js";
 import openApiRouter    from "./openapi.js";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -30,7 +31,7 @@ const NETWORK     = (process.env.NETWORK || "eip155:84532") as `${string}:${stri
 const FACILITATOR = process.env.FACILITATOR_URL || "https://x402.org/facilitator";
 const IS_MAINNET  = NETWORK === "eip155:8453";
 
-const PAID_PATHS = new Set(["/trustscore", "/sslcheck", "/headers", "/robots", "/urlcheck", "/emailtrust"]);
+const PAID_PATHS = new Set(["/trustscore", "/sslcheck", "/headers", "/robots", "/urlcheck", "/emailtrust", "/safefetch"]);
 
 if (!PAY_TO || !PAY_TO.startsWith("0x")) {
   console.error("❌  PAY_TO_ADDRESS is missing or invalid in .env");
@@ -177,8 +178,14 @@ app.get("/", (req, res) => {
   res.json({
     name:        "TrustSource API",
     description: "Domain trust, SSL, security, crawler-policy, URL-safety, and email-auth intelligence for AI agents — powered by x402",
-    version:     "0.4.0",
+    version:     "0.5.0",
     endpoints: {
+      "GET /safefetch": {
+        description: "Injection-safe content fetch — sanitized page text + prompt-injection risk grade, so an agent never ingests hostile markup",
+        price:       "$0.01 USDC",
+        params:      { url: "string" },
+        example:     "/safefetch?url=https://example.com",
+      },
       "GET /urlcheck": {
         description: "Composite URL safety verdict — CLEAR/REVIEW/BLOCK fusing trust + TLS + typosquat",
         price:       "$0.01 USDC",
@@ -258,6 +265,27 @@ app.use(openApiRouter);
 app.use(
   paymentMiddleware(
     {
+      "GET /safefetch": {
+        accepts: [{ scheme: "exact", price: "$0.01", network: NETWORK, payTo: PAY_TO }],
+        description: "Fetch a URL safely on the agent's behalf and get back sanitized, agent-ready page text PLUS a prompt-injection risk verdict (SAFE / REVIEW / BLOCK). Scans for indirect prompt injection an agent cannot detect itself without first ingesting it: instructions hidden in display:none elements, HTML comments, alt attributes and off-screen text; invisible Unicode-Tag and zero-width smuggling; homoglyph-obfuscated and base64-encoded payloads; ChatML/[INST] delimiter spoofing; markdown-image data exfiltration; and tool-call bait. Returned text has hidden elements and invisible control characters removed, so the model only ever sees what a human would see. Use before feeding ANY fetched web page, document, or tool output into an LLM context.",
+        mimeType: "application/json",
+        extensions: {
+          ...declareDiscoveryExtension({
+            input: { url: "https://example.com" },
+            inputSchema: {
+              properties: { url: { type: "string", description: "Full URL to fetch and scan (e.g. https://example.com/article)." } },
+              required: ["url"],
+            },
+            output: {
+              example: {
+                url: "https://example.com", verdict: "SAFE", risk: 0,
+                injection: { detected: false, techniques: [] },
+                content: { analyzed: true, chars: 1840, title: "Example Domain" },
+              },
+            },
+          }),
+        },
+      },
       "GET /urlcheck": {
         accepts: [{ scheme: "exact", price: "$0.01", network: NETWORK, payTo: PAY_TO }],
         description: "Get a single CLEAR / REVIEW / BLOCK safety verdict on any URL before an agent clicks, fetches, submits data to, or transacts with it. Fuses domain trust (WHOIS age, TLD risk, DNS presence, registrar), a live TLS certificate check, and typosquat/lookalike-brand detection into one graded 0–100 answer with human-readable reasons — the go/no-go an agent can gate on instead of running and interpreting several separate checks itself.",
@@ -385,6 +413,7 @@ app.use(
 // ─── Paid routes ──────────────────────────────────────────────────────────────
 
 app.use(urlcheckRouter);
+app.use(safefetchRouter);
 app.use(emailtrustRouter);
 app.use(trustscoreRouter);
 app.use(sslcheckRouter);
@@ -413,6 +442,7 @@ app.listen(PORT, () => {
 ║    GET /              → Landing / API info (free)    ║
 ║    GET /health        → Health check     (free)      ║
 ║    GET /openapi.json  → OpenAPI spec     (free)      ║
+║    GET /safefetch     → Injection-safe fetch (0.010 USDC)║
 ║    GET /urlcheck      → URL safety verdict (0.010 USDC)║
 ║    GET /emailtrust    → Email-auth grade   (0.003 USDC)║
 ║    GET /trustscore    → Domain score     (0.003 USDC)║

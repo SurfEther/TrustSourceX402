@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>TrustSource — x402 Verification &amp; Trust APIs for AI Agents</title>
-  <meta name="description" content="Six x402-powered pay-per-call APIs for autonomous AI agents: URL safety verdict, email-auth (SPF/DKIM/DMARC) grade, domain trust score, SSL/TLS check, HTTP security-header grade, and robots.txt + AI-bot policy. Pay per call in USDC on Base — no API keys, no accounts. Also an MCP server." />
+  <meta name="description" content="Seven x402-powered pay-per-call APIs for autonomous AI agents: injection-safe content fetch (prompt-injection detection), URL safety verdict, email-auth (SPF/DKIM/DMARC) grade, domain trust score, SSL/TLS check, HTTP security-header grade, and robots.txt + AI-bot policy. Pay per call in USDC on Base — no API keys, no accounts. Also an MCP server." />
   <meta name="keywords" content="x402 API, AI agent API, domain verification API, URL safety API, agent trust API, SSL check API, email authentication API, DMARC API, MCP server, pay per use API, USDC Base, no API key" />
   <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
   <link rel="canonical" href="https://trustsource.cc/" />
@@ -14,12 +14,12 @@
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="TrustSource" />
   <meta property="og:title" content="TrustSource — x402 Verification &amp; Trust APIs for AI Agents" />
-  <meta property="og:description" content="Six x402 pay-per-call verification APIs for AI agents: URL safety, email-auth, domain trust, SSL, security headers, robots/AI-bot policy. USDC on Base. No API keys." />
+  <meta property="og:description" content="Seven x402 pay-per-call agent-safety APIs: injection-safe fetch, URL safety, email-auth, domain trust, SSL, security headers, robots/AI-bot policy. USDC on Base. No API keys." />
   <meta property="og:url" content="https://trustsource.cc/" />
   <!-- Twitter -->
   <meta name="twitter:card" content="summary" />
   <meta name="twitter:title" content="TrustSource — x402 Verification &amp; Trust APIs for AI Agents" />
-  <meta name="twitter:description" content="Six x402 pay-per-call verification APIs for AI agents. USDC on Base. No API keys. Also an MCP server." />
+  <meta name="twitter:description" content="Seven x402 pay-per-call agent-safety APIs. USDC on Base. No API keys. Also an MCP server." />
   <!-- Structured data: the API suite + per-endpoint offers, for search engines and LLMs -->
   <script type="application/ld+json">
   {
@@ -27,17 +27,75 @@
     "@type": "WebAPI",
     "name": "TrustSource",
     "url": "https://trustsource.cc/",
-    "description": "x402 pay-per-call verification & trust APIs for AI agents — URL safety, email authentication, domain trust, SSL/TLS, security headers, and robots/AI-bot policy. Paid in USDC on Base mainnet; no API keys, no accounts.",
+    "description": "x402 pay-per-call agent-safety & trust APIs — injection-safe content fetch, URL safety, email authentication, domain trust, SSL/TLS, security headers, and robots/AI-bot policy. Paid in USDC on Base mainnet; no API keys, no accounts.",
     "documentation": "https://api.trustsource.cc/openapi.json",
-    "provider": { "@type": "Organization", "name": "TrustSource", "url": "https://trustsource.cc/", "email": "hello@trustsource.cc" },
-    "audience": { "@type": "Audience", "audienceType": "Autonomous AI agents and AI agent developers" },
+    "provider": {
+      "@type": "Organization",
+      "name": "TrustSource",
+      "url": "https://trustsource.cc/",
+      "email": "hello@trustsource.cc"
+    },
+    "audience": {
+      "@type": "Audience",
+      "audienceType": "Autonomous AI agents and AI agent developers"
+    },
     "offers": [
-      { "@type": "Offer", "name": "URL safety verdict (/urlcheck)", "priceCurrency": "USDC", "price": "0.01", "category": "pay-per-call", "description": "CLEAR/REVIEW/BLOCK verdict fusing domain trust, live TLS, and typosquat/lookalike detection." },
-      { "@type": "Offer", "name": "Email-auth grade (/emailtrust)", "priceCurrency": "USDC", "price": "0.003", "category": "pay-per-call", "description": "SPF/DKIM/DMARC/BIMI/MX posture grade — can this sender be spoofed." },
-      { "@type": "Offer", "name": "Domain trust score (/trustscore)", "priceCurrency": "USDC", "price": "0.003", "category": "pay-per-call", "description": "0-100 domain trust from WHOIS age, TLD risk, DNS presence, registrar." },
-      { "@type": "Offer", "name": "SSL/TLS check (/sslcheck)", "priceCurrency": "USDC", "price": "0.002", "category": "pay-per-call", "description": "Live TLS handshake: chain, trusted CA, expiry, cipher, protocol." },
-      { "@type": "Offer", "name": "Security-header grade (/headers)", "priceCurrency": "USDC", "price": "0.003", "category": "pay-per-call", "description": "HTTP security-header audit, A+ to F grade." },
-      { "@type": "Offer", "name": "robots.txt + AI-bot policy (/robots)", "priceCurrency": "USDC", "price": "0.002", "category": "pay-per-call", "description": "Crawl-policy check across 24 known AI crawlers." }
+      {
+        "@type": "Offer",
+        "name": "Injection-safe content fetch (/safefetch)",
+        "priceCurrency": "USDC",
+        "price": "0.01",
+        "category": "pay-per-call",
+        "description": "Sanitized agent-ready page text plus a prompt-injection verdict (SAFE/REVIEW/BLOCK) — detects hidden, invisible-Unicode, homoglyph, encoded and delimiter-spoof injection."
+      },
+      {
+        "@type": "Offer",
+        "name": "URL safety verdict (/urlcheck)",
+        "priceCurrency": "USDC",
+        "price": "0.01",
+        "category": "pay-per-call",
+        "description": "CLEAR/REVIEW/BLOCK verdict fusing domain trust, live TLS, and typosquat/lookalike detection."
+      },
+      {
+        "@type": "Offer",
+        "name": "Email-auth grade (/emailtrust)",
+        "priceCurrency": "USDC",
+        "price": "0.003",
+        "category": "pay-per-call",
+        "description": "SPF/DKIM/DMARC/BIMI/MX posture grade — can this sender be spoofed."
+      },
+      {
+        "@type": "Offer",
+        "name": "Domain trust score (/trustscore)",
+        "priceCurrency": "USDC",
+        "price": "0.003",
+        "category": "pay-per-call",
+        "description": "0-100 domain trust from WHOIS age, TLD risk, DNS presence, registrar."
+      },
+      {
+        "@type": "Offer",
+        "name": "SSL/TLS check (/sslcheck)",
+        "priceCurrency": "USDC",
+        "price": "0.002",
+        "category": "pay-per-call",
+        "description": "Live TLS handshake: chain, trusted CA, expiry, cipher, protocol."
+      },
+      {
+        "@type": "Offer",
+        "name": "Security-header grade (/headers)",
+        "priceCurrency": "USDC",
+        "price": "0.003",
+        "category": "pay-per-call",
+        "description": "HTTP security-header audit, A+ to F grade."
+      },
+      {
+        "@type": "Offer",
+        "name": "robots.txt + AI-bot policy (/robots)",
+        "priceCurrency": "USDC",
+        "price": "0.002",
+        "category": "pay-per-call",
+        "description": "Crawl-policy check across 24 known AI crawlers."
+      }
     ]
   }
   </script>
@@ -643,7 +701,7 @@
     <div class="hero-tag">x402 · Base Mainnet · 6 endpoints live</div>
     <h1>Verification<br/>intelligence<br/>for <em>agents.</em></h1>
     <p class="hero-sub">
-      Six x402-powered APIs at <code style="color:var(--accent); background:var(--bg2); padding:2px 6px; font-size:0.85em;">api.trustsource.cc</code>
+      Seven x402-powered APIs at <code style="color:var(--accent); background:var(--bg2); padding:2px 6px; font-size:0.85em;">api.trustsource.cc</code>
       that autonomous AI agents use before they transact.
       A one-call CLEAR/REVIEW/BLOCK URL safety verdict. Email spoofability grading.
       Domain trust scoring. SSL certificate intelligence. HTTP security header audits.
@@ -684,12 +742,26 @@
  
   <!-- ── API overview cards ── -->
   <section class="section" id="apis">
-    <div class="section-label">// Six endpoints</div>
+    <div class="section-label">// Seven endpoints</div>
     <h2 class="section-title">Verify anything<br/>before you transact.</h2>
     <p class="section-intro">
       Each endpoint solves one specific verification need. They share a wallet, share an OpenAPI spec, and stack naturally — your agent can chain them together to get a complete picture of any target. Start with <code style="color:var(--accent);">/urlcheck</code> for a single go/no-go verdict, then drill into any signal.
     </p>
     <div class="api-cards">
+      <a href="#safefetch" class="api-card">
+        <div>
+          <div class="api-card-header">
+            <span class="api-card-route">GET /safefetch</span>
+            <span class="api-card-price">$0.01 USDC</span>
+          </div>
+          <div class="api-card-title">SafeFetch</div>
+          <div class="api-card-desc">
+            Fetch a page safely instead of fetching it directly. Returns sanitized, agent-ready text <em>plus</em> a prompt-injection verdict — catching instructions hidden in markup, invisible Unicode, homoglyphs and encoded payloads that your agent would otherwise read straight into its context.
+          </div>
+        </div>
+        <span class="api-card-link">Learn more →</span>
+      </a>
+
       <a href="#urlcheck" class="api-card">
         <div>
           <div class="api-card-header">

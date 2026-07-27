@@ -6,8 +6,8 @@ const spec = {
   openapi: "3.1.0",
   info: {
     title:       "TrustSource API",
-    version:     "0.4.0",
-    description: "x402-powered domain, SSL, security, and crawler-policy intelligence for AI agents. Six endpoints return structured trust intelligence on any domain or URL — no API keys, no accounts. Pay per use with USDC via the x402 protocol on Base Mainnet.",
+    version:     "0.5.0",
+    description: "x402-powered content-safety, domain, SSL, security, and crawler-policy intelligence for AI agents. Seven endpoints return structured trust intelligence on any domain or URL — no API keys, no accounts. Pay per use with USDC via the x402 protocol on Base Mainnet.",
     contact: {
       url: "https://trustsource.cc",
     },
@@ -80,6 +80,55 @@ const spec = {
               },
             },
           },
+        },
+      },
+    },
+    "/safefetch": {
+      get: {
+        operationId: "getSafeFetch",
+        security:    [{ x402: [] }],
+        summary:     "Injection-safe content fetch",
+        description: [
+          "Fetches a URL server-side and returns **sanitized, agent-ready text** plus a",
+          "**prompt-injection risk verdict** (SAFE / REVIEW / BLOCK).",
+          "",
+          "Detects indirect prompt injection that an agent cannot detect itself without first",
+          "ingesting it: instructions hidden in `display:none` elements, HTML comments, `alt`",
+          "attributes and off-screen text; invisible Unicode-Tag (U+E0000) and zero-width",
+          "smuggling; homoglyph-obfuscated and base64-encoded payloads; ChatML / `[INST]`",
+          "delimiter spoofing; markdown-image data exfiltration; and tool-call bait.",
+          "",
+          "Findings are weighted by WHERE they occur — the same phrase is low-risk in visible",
+          "prose (security blogs discuss injection constantly) and high-risk when concealed.",
+          "",
+          "The returned `content.text` has hidden elements and invisible control characters",
+          "removed, so a model only ever sees what a human would see.",
+          "",
+          "**Payment:** 0.01 USDC per call via x402 (Base Mainnet).",
+          "**Caching:** 10 minutes per URL.",
+        ].join("\n"),
+        tags: ["Trust"],
+        parameters: [
+          {
+            name:        "url",
+            in:          "query",
+            description: "Full URL to fetch and scan (e.g. https://example.com/article)",
+            required:    true,
+            schema:      { type: "string", maxLength: 2048, example: "https://example.com" },
+          },
+        ],
+        responses: {
+          "200": {
+            description: "Fetch + injection scan completed",
+            content: { "application/json": { schema: { $ref: "#/components/schemas/SafeFetchResponse" } } },
+          },
+          "400": { description: "Invalid or missing url parameter" },
+          "402": {
+            description: "Payment required — 0.01 USDC via x402",
+            headers: { "PAYMENT-REQUIRED": { description: "Base64-encoded JSON payment requirements", schema: { type: "string" } } },
+          },
+          "429": { description: "Rate limit exceeded" },
+          "502": { description: "Fetch failed — target unreachable, blocked, or too many redirects" },
         },
       },
     },
@@ -415,6 +464,98 @@ const spec = {
   },
   components: {
     schemas: {
+      SafeFetchResponse: {
+        type:     "object",
+        required: ["url", "verdict", "risk", "reasons", "injection", "content", "meta"],
+        properties: {
+          url:          { type: "string", description: "Final URL after redirects", example: "https://example.com/" },
+          requestedUrl: { type: "string", description: "URL as requested" },
+          domain:       { type: ["string", "null"] },
+          verdict: {
+            type: "string",
+            enum: ["SAFE", "REVIEW", "BLOCK"],
+            description: "SAFE = no injection patterns found. REVIEW = weak/ambiguous signals or unscanned content type. BLOCK = a critical technique concealed from human view, or high aggregate risk.",
+          },
+          risk:    { type: "number", description: "Aggregate injection risk, 0–1", example: 0.87 },
+          reasons: { type: "array", items: { type: "string" }, description: "Human-readable explanation of the verdict" },
+          injection: {
+            type: "object",
+            properties: {
+              detected:   { type: "boolean" },
+              risk:       { type: "number" },
+              techniques: {
+                type:  "array",
+                items: { type: "string" },
+                description: "instruction_override | system_prompt_exfil | data_exfiltration | delimiter_spoof | encoded_payload | tool_call_bait | role_hijack | homoglyph_obfuscation | unicode_tag_smuggling | invisible_unicode | bidi_override",
+                example: ["instruction_override", "unicode_tag_smuggling"],
+              },
+              findings: {
+                type: "array",
+                description: "Per-finding detail, highest weight first",
+                items: {
+                  type: "object",
+                  properties: {
+                    technique: { type: "string" },
+                    placement: { type: "string", enum: ["hidden", "comment", "metadata", "accessibility", "script", "visible"], description: "Where it was found — drives the weighting" },
+                    severity:  { type: "number", description: "Base severity of the technique (0–1)" },
+                    weight:    { type: "number", description: "severity × placement multiplier — actual contribution to risk" },
+                    detail:    { type: "string" },
+                    snippet:   { type: "string", description: "Short escaped excerpt" },
+                  },
+                },
+              },
+              findingsTruncated: { type: "boolean" },
+            },
+          },
+          content: {
+            type: "object",
+            properties: {
+              analyzed:    { type: "boolean", description: "False when the content type is not text — the body was NOT scanned" },
+              contentType: { type: ["string", "null"] },
+              title:       { type: ["string", "null"] },
+              text:        { type: "string", description: "Sanitized visible text: hidden elements and invisible control characters removed" },
+              chars:       { type: "integer" },
+              truncated:   { type: "boolean" },
+              sanitized: {
+                type: "object",
+                properties: {
+                  hiddenSegmentsRemoved: { type: "integer" },
+                  invisibleCharsRemoved: { type: "integer" },
+                  note:                  { type: "string" },
+                },
+              },
+            },
+          },
+          domainTrust: {
+            type: ["object", "null"],
+            description: "Domain trust of the fetched host. Null if the lookup degraded (see meta.degraded).",
+            properties: {
+              score:           { type: "integer" },
+              tier:            { type: "string", enum: ["TRUSTED", "MODERATE", "CAUTION", "HIGH_RISK"] },
+              ageDays:         { type: "integer" },
+              newlyRegistered: { type: "boolean" },
+            },
+          },
+          response: {
+            type: "object",
+            properties: {
+              status:    { type: "integer" },
+              redirects: { type: "integer" },
+              bytes:     { type: "integer" },
+            },
+          },
+          meta: {
+            type: "object",
+            properties: {
+              checkedAt:  { type: "string", format: "date-time" },
+              apiVersion: { type: "string" },
+              paidWith:   { type: "string", example: "x402/USDC" },
+              cached:     { type: "boolean" },
+              degraded:   { type: "array", items: { type: "string" }, description: "Signals that failed and were omitted" },
+            },
+          },
+        },
+      },
       UrlCheckResponse: {
         type:     "object",
         required: ["domain", "verdict", "score", "maxScore", "reasons", "signals", "meta"],

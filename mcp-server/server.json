@@ -1,17 +1,17 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.SurfEther/trustsource",
-  "description": "x402-paid domain verification for AI agents — url-safety, email-auth, trustscore, SSL, security headers, robots.",
+  "description": "x402-paid agent-safety + domain verification — injection-safe fetch, url-safety, email-auth, trustscore, SSL, security headers, robots.",
   "repository": {
     "url": "https://github.com/SurfEther/TrustSourceX402",
     "source": "github"
   },
-  "version": "0.1.8",
+  "version": "0.2.0",
   "packages": [
     {
       "registryType": "npm",
       "identifier": "trustsource-mcp",
-      "version": "0.1.8",
+      "version": "0.2.0",
       "transport": {
         "type": "stdio"
       },

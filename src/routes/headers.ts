@@ -2,12 +2,12 @@ import { Router, Request, Response } from "express";
 import net from "net";
 import {
   VALID_DOMAIN_RE,
-  assertHostAllowed,
   assertUrlSchemeAndPort,
   isPrivateIp,
   normalizeHostname,
   BlockedHostError,
 } from "../lib/net-guard.js";
+import { guardedFetch } from "../lib/fetch-guard.js";
 
 const router = Router();
 
@@ -94,67 +94,23 @@ interface FetchResult {
   redirects: number;
 }
 
+// Headers-only fetch. The SSRF-hardened redirect loop lives in lib/fetch-guard
+// so /headers, /robots and /safefetch all share one implementation — the audit
+// lesson was that duplicated guard logic drifts apart.
 async function safeFetch(initialUrl: URL): Promise<FetchResult> {
-  let currentUrl = initialUrl;
-  let redirects  = 0;
-
-  while (redirects <= MAX_REDIRECTS) {
-    // Re-verify scheme, port, and that the host does not resolve to a private
-    // address on EVERY hop — prevents redirect-to-internal / port-scan attacks.
-    assertUrlSchemeAndPort(currentUrl);
-    await assertHostAllowed(currentUrl.hostname);
-
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
-
-    try {
-      const response = await fetch(currentUrl.toString(), {
-        method:   "GET",
-        redirect: "manual",                            // we handle redirects ourselves
-        signal:   controller.signal,
-        headers: {
-          "User-Agent":      "TrustSource-HeaderCheck/1.0 (+https://trustsource.cc)",
-          "Accept":          "*/*",
-          "Accept-Encoding": "identity",  // disable compression — prevents decompression-bomb DoS
-        },
-      });
-      clearTimeout(timer);
-
-      // Collect headers (lowercased keys for consistency)
-      const headers: Record<string, string> = {};
-      response.headers.forEach((value, key) => { headers[key.toLowerCase()] = value; });
-
-      // Handle redirect — scheme/port/host of the next hop are re-validated at
-      // the top of the loop on the following iteration.
-      if (response.status >= 300 && response.status < 400 && headers["location"]) {
-        try {
-          currentUrl = new URL(headers["location"], currentUrl);
-        } catch {
-          throw new Error("Invalid redirect Location header");
-        }
-
-        redirects++;
-
-        // Discard response body to avoid memory accumulation
-        try { await response.body?.cancel(); } catch { /* ignore */ }
-        continue;
-      }
-
-      // Final response — discard body, we only care about headers
-      try { await response.body?.cancel(); } catch { /* ignore */ }
-
-      return {
-        finalUrl: currentUrl.toString(),
-        status:   response.status,
-        headers,
-        redirects,
-      };
-    } catch (err) {
-      clearTimeout(timer);
-      throw err;
-    }
-  }
-  throw new Error(`Too many redirects (max ${MAX_REDIRECTS})`);
+  const r = await guardedFetch(initialUrl, {
+    timeoutMs:    FETCH_TIMEOUT_MS,
+    maxRedirects: MAX_REDIRECTS,
+    maxBytes:     0,               // headers only — never buffer the body
+    userAgent:    "TrustSource-HeaderCheck/1.0 (+https://trustsource.cc)",
+    accept:       "*/*",
+  });
+  return {
+    finalUrl:  r.finalUrl,
+    status:    r.status,
+    headers:   r.headers,
+    redirects: r.redirects,
+  };
 }
 
 // ─── Header analysis ──────────────────────────────────────────────────────────

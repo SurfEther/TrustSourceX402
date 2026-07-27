@@ -12,7 +12,7 @@
 - **GET /headers** — $0.003 USDC. HTTP security-header audit (HSTS, CSP, X-Frame-Options, X-Content-Type-Options, Referrer-Policy, Permissions-Policy, Cross-Origin-*) → A+ to F grade. Params: `url`. Example: `https://api.trustsource.cc/headers?url=https://example.com`
 - **GET /robots** — $0.002 USDC. robots.txt + AI-bot crawl-policy check across 24 known AI crawlers (GPTBot, ClaudeBot, PerplexityBot, Google-Extended, CCBot, Bytespider, …) → crawl-policy tier (OPEN / SELECTIVE / BLOCKED_AI / BLOCKED_ALL). Call before scraping, RAG ingestion, or training-data collection. Params: `domain`. Example: `https://api.trustsource.cc/robots?domain=example.com`
 
-Every paid endpoint returns HTTP 402 with x402 v2 payment requirements on the first call; the client pays the exact USDC amount and retries with the payment proof. Responses are JSON. Results are cached server-side (1–12h depending on endpoint).
+Every paid endpoint returns HTTP 402 with x402 v2 payment requirements on the first call; the client pays the exact USDC amount and retries with the payment proof. Responses are JSON. Results are cached server-side (10 minutes to 12 hours depending on endpoint).
 
 ## How agents consume it
 

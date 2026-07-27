@@ -686,6 +686,7 @@
     <a href="/" class="nav-logo">Trust<span>Source</span></a>
     <ul class="nav-links">
       <li><a href="#apis">APIs</a></li>
+      <li><a href="#safefetch">SafeFetch</a></li>
       <li><a href="#urlcheck">UrlCheck</a></li>
       <li><a href="#emailtrust">EmailTrust</a></li>
       <li><a href="#trustscore">TrustScore</a></li>
@@ -698,14 +699,14 @@
  
   <!-- ── Hero ── -->
   <section class="hero">
-    <div class="hero-tag">x402 · Base Mainnet · 6 endpoints live</div>
+    <div class="hero-tag">x402 · Base Mainnet · 7 endpoints live</div>
     <h1>Verification<br/>intelligence<br/>for <em>agents.</em></h1>
     <p class="hero-sub">
       Seven x402-powered APIs at <code style="color:var(--accent); background:var(--bg2); padding:2px 6px; font-size:0.85em;">api.trustsource.cc</code>
       that autonomous AI agents use before they transact.
-      A one-call CLEAR/REVIEW/BLOCK URL safety verdict. Email spoofability grading.
-      Domain trust scoring. SSL certificate intelligence. HTTP security header audits.
-      Robots.txt and AI bot policy detection.
+      Injection-safe page fetching. A one-call CLEAR/REVIEW/BLOCK URL safety verdict.
+      Email spoofability grading. Domain trust scoring. SSL certificate intelligence.
+      HTTP security header audits. Robots.txt and AI bot policy detection.
       No API keys. Pay per query in USDC.
     </p>
     <div class="hero-actions">
@@ -723,7 +724,7 @@
   <!-- ── Stats ── -->
   <div class="stats">
     <div class="stat">
-      <div class="stat-value"><span>6</span></div>
+      <div class="stat-value"><span>7</span></div>
       <div class="stat-label">Live APIs</div>
     </div>
     <div class="stat">
@@ -735,7 +736,7 @@
       <div class="stat-label">API key setup</div>
     </div>
     <div class="stat">
-      <div class="stat-value">1<span>–12h</span></div>
+      <div class="stat-value">10m<span>–12h</span></div>
       <div class="stat-label">Result cache</div>
     </div>
   </div>
@@ -848,6 +849,47 @@
     </div>
   </section>
  
+  <!-- ── SafeFetch detail ── -->
+  <section class="api-section" id="safefetch">
+    <div class="api-section-inner">
+      <div class="api-section-text">
+        <div class="api-section-route">GET https://api.trustsource.cc/safefetch?url=https://example.com</div>
+        <h2 class="api-section-title">SafeFetch</h2>
+        <p class="api-section-desc">
+          The call an agent makes <em>instead of</em> fetching a page itself. Retrieves the URL through an SSRF-guarded, DNS-pinned fetcher, then separates what a human would actually see from what is concealed in the markup — and scans both for prompt injection before any of it reaches your model's context. You get clean, agent-ready text plus a SAFE / REVIEW / BLOCK verdict, so untrusted web content is classified before it is read, not after.
+        </p>
+
+        <div class="signal-list">
+          <div class="signal-row"><span class="signal-name">Instruction override / role hijack / system-prompt exfil</span><span class="signal-pts">scanned</span></div>
+          <div class="signal-row"><span class="signal-name">Invisible Unicode, tag smuggling &amp; bidi overrides</span><span class="signal-pts">scanned</span></div>
+          <div class="signal-row"><span class="signal-name">Homoglyph obfuscation &amp; encoded payloads</span><span class="signal-pts">scanned</span></div>
+          <div class="signal-row"><span class="signal-name">Tool-call bait, delimiter spoofing &amp; data exfiltration</span><span class="signal-pts">scanned</span></div>
+          <div class="signal-row"><span class="signal-name">Placement weighting — hidden text outranks visible text</span><span class="signal-pts">weighted</span></div>
+        </div>
+
+        <div class="tier-list">
+          <div class="tier-row"><span class="tier-badge tier-trusted">SAFE</span><span class="tier-range">nothing concealed, risk below 0.25</span></div>
+          <div class="tier-row"><span class="tier-badge tier-caution">REVIEW</span><span class="tier-range">weak signals, unscanned, or low-trust host</span></div>
+          <div class="tier-row"><span class="tier-badge tier-high-risk">BLOCK</span><span class="tier-range">concealed from human view, or risk ≥ 0.7</span></div>
+        </div>
+      </div>
+      <div class="code-block">
+<span class="c-key">{</span>
+  <span class="c-key">"url":</span>     <span class="c-str">"https://example.com/"</span><span class="c-key">,</span>
+  <span class="c-key">"verdict":</span> <span class="c-tier">"BLOCK"</span><span class="c-key">,</span>
+  <span class="c-key">"risk":</span>    <span class="c-num">0.95</span><span class="c-key">,</span>
+  <span class="c-key">"reasons":</span> <span class="c-key">[</span> <span class="c-str">"instruction override concealed in hidden content"</span> <span class="c-key">],</span>
+  <span class="c-key">"injection":</span> <span class="c-key">{</span>
+    <span class="c-key">"detected":</span>   <span class="c-num">true</span><span class="c-key">,</span>
+    <span class="c-key">"techniques":</span> <span class="c-key">[</span> <span class="c-str">"instruction_override"</span> <span class="c-key">],</span>
+    <span class="c-key">"findings":</span>   <span class="c-key">[</span> <span class="c-key">{</span> <span class="c-key">"placement":</span> <span class="c-str">"hidden"</span><span class="c-key">,</span> <span class="c-key">"severity":</span> <span class="c-num">0.95</span><span class="c-key">,</span> <span class="c-key">"weight":</span> <span class="c-num">0.95</span> <span class="c-key">}</span> <span class="c-key">]</span>
+  <span class="c-key">},</span>
+  <span class="c-key">"content":</span> <span class="c-key">{</span> <span class="c-key">"text":</span> <span class="c-str">"…sanitized page text…"</span><span class="c-key">,</span> <span class="c-key">"truncated":</span> <span class="c-num">false</span> <span class="c-key">}</span>
+<span class="c-key">}</span>
+      </div>
+    </div>
+  </section>
+
   <!-- ── UrlCheck detail ── -->
   <section class="api-section" id="urlcheck">
     <div class="api-section-inner">
@@ -1122,7 +1164,7 @@
     <div class="pricing-card">
       <div class="pricing-item">
         <div class="pricing-item-label">Per query</div>
-        <div class="pricing-item-value">$0.002 <span>– $0.003 USDC</span></div>
+        <div class="pricing-item-value">$0.002 <span>– $0.01 USDC</span></div>
       </div>
       <div class="pricing-item">
         <div class="pricing-item-label">Protocol</div>
@@ -1137,7 +1179,7 @@
  
   <!-- ── CTA ── -->
   <section class="cta-section">
-    <h2>One wallet.<br/>Four endpoints.</h2>
+    <h2>One wallet.<br/>Seven endpoints.</h2>
     <p>No signup. No API key. Discoverable on Agentic.Market.</p>
     <div class="cta-actions">
       <a href="https://agentic.market" target="_blank" class="btn-primary">

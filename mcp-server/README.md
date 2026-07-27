@@ -2,7 +2,7 @@
 
 MCP server exposing the [TrustSource](https://trustsource.cc) suite of x402-paid domain verification APIs to any MCP-compatible client (Claude Desktop, Claude Code, Cline, Continue, etc.).
 
-Four tools, each settled per-call in USDC on Base Mainnet. No API keys, no signups, no accounts — just a wallet.
+Seven tools, each settled per-call in USDC on Base Mainnet. No API keys, no signups, no accounts — just a wallet.
 
 These tools are also discoverable to autonomous agents via Coinbase's Bazaar marketplace, where AI agents browse, pay for, and call x402-enabled services.
 
@@ -10,6 +10,9 @@ These tools are also discoverable to autonomous agents via Coinbase's Bazaar mar
 
 | Tool | Cost | What it does |
 |---|---|---|
+| `trustsource_safefetch` | $0.01 USDC | Fetch a page and return sanitized text **plus** a prompt-injection verdict (SAFE/REVIEW/BLOCK) |
+| `trustsource_urlcheck` | $0.01 USDC | One-call CLEAR/REVIEW/BLOCK safety verdict on any URL (domain + TLS + typosquat fused) |
+| `trustsource_emailtrust` | $0.003 USDC | Email spoofability grade A–F (SPF, DKIM, DMARC) |
 | `trustsource_score` | $0.003 USDC | Domain trust score 0–100 (WHOIS age, TLD, DNS, registrar) |
 | `trustsource_ssl` | $0.002 USDC | TLS certificate intelligence (chain, expiry, CA trust, TLS version) |
 | `trustsource_headers` | $0.003 USDC | HTTP security header audit (A+ to F grade) |
@@ -31,10 +34,10 @@ npx -y trustsource-mcp
 
 The server needs a Base Mainnet wallet private key. The wallet must hold:
 
-USDC for per-call fees ($0.002–$0.003 per call)
+USDC for per-call fees ($0.002–$0.01 per call)
 ETH for gas (minimal — Base Mainnet gas is fractions of a cent per call)
 
-Suggested starter balance: $1 USDC + 0.0005 ETH on Base Mainnet covers ~300 calls. Bridge via bridge.base.org or buy directly to a Base wallet via Coinbase.
+Suggested starter balance: $1 USDC + 0.0005 ETH on Base Mainnet covers 100 calls of the $0.01 tools (`trustsource_safefetch`, `trustsource_urlcheck`) or ~330 calls of the $0.003 tools. Bridge via bridge.base.org or buy directly to a Base wallet via Coinbase.
 
 Set the private key in your MCP client's environment, **not** in any committed file.
 
@@ -56,7 +59,7 @@ Edit `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS) o
 }
 ```
 
-Restart Claude Desktop. The four tools appear automatically.
+Restart Claude Desktop. The seven tools appear automatically.
 
 ### Cline / Continue / other MCP clients
 
@@ -95,9 +98,9 @@ Total latency per call: typically 1–3 seconds including settlement.
 
 ## Cost discipline
 
-If your agent is making many calls, deduplicate by domain client-side before invoking tools. The API caches responses (1 hour for `/trustscore` and `/sslcheck`, up to 12 hours for `/robots` and `/headers`), but the cache reduces latency, not price — every call costs the same regardless of whether it hits cache.
+If your agent is making many calls, deduplicate by domain client-side before invoking tools. The API caches responses (10 minutes for `/safefetch`, 1 hour for `/trustscore` and `/urlcheck`, 4 hours for `/headers`, 6 hours for `/sslcheck` and `/emailtrust`, 12 hours for `/robots`), but the cache reduces latency, not price — every call costs the same regardless of whether it hits cache.
 
-Worst-case full domain audit: `trustsource_score` + `trustsource_ssl` + `trustsource_headers` + `trustsource_robots` = $0.010 USDC.
+Worst-case full domain audit: `trustsource_score` + `trustsource_ssl` + `trustsource_headers` + `trustsource_robots` = $0.010 USDC. Prefer `trustsource_urlcheck` ($0.01) when you want one fused verdict instead of four raw signals, and `trustsource_safefetch` ($0.01) whenever you would otherwise fetch a page directly.
 
 ## Build from source
 

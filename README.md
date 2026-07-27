@@ -74,7 +74,7 @@ Get testnet USDC: https://faucet.circle.com (select Base Sepolia)
 ### `GET /safefetch` ⭐
 Fetch a page **safely** instead of fetching it directly: returns sanitized, agent-ready text **plus a prompt-injection verdict**.
 
-An agent cannot scan a page for injection with its own model without first ingesting the attack. `/safefetch` does the scan in an isolated process and hands back only clean content.
+An agent cannot scan a page for injection with its own model without first ingesting the attack. `/safefetch` does the fetching and scanning server-side — outside your agent's context window — and hands back classified content, so hostile markup never reaches your model unlabelled.
 
 **Detects:** instructions hidden in `display:none` / off-screen elements, HTML comments, `alt` attributes · invisible Unicode-Tag (U+E0000) and zero-width smuggling · homoglyph-obfuscated and base64-encoded payloads · ChatML / `[INST]` delimiter spoofing · markdown-image data exfiltration · tool-call bait.
 
@@ -280,7 +280,7 @@ trustsource/
 - [x] OpenAPI spec at `/openapi.json`
 - [x] Bazaar / Agentic.Market discovery extension
 - [x] MCP server (`trustsource-mcp`) wrapping all seven APIs
-- [ ] `/safefetch` — injection-safe content firewall (flagship)
+- [x] **SafeFetch API — injection-safe content firewall (flagship)**
 - [ ] `/phishcheck` — typosquat + Certificate-Transparency detection
 - [ ] `/kyb` — official-registry business-identity verification
 - [ ] ResearchOracle (reshaped) — verification / source-trust oracle

@@ -41,7 +41,7 @@
     "wallet_private_key": {
       "type": "string",
       "title": "Wallet Private Key",
-      "description": "Base Mainnet wallet private key that holds USDC (per-call fees) and ETH (gas). Suggested starter balance: $1 USDC + 0.0005 ETH covers ~300 calls. Never share this key.",
+      "description": "Base Mainnet wallet private key that holds USDC (per-call fees) and ETH (gas). Suggested starter balance: $1 USDC + 0.0005 ETH covers ~200 calls. Never share this key.",
       "required": true,
       "sensitive": true
     },

@@ -112,9 +112,16 @@ const spec = {
           {
             name:        "url",
             in:          "query",
-            description: "Full URL to fetch and scan (e.g. https://example.com/article)",
-            required:    true,
+            description: "Full URL to fetch and scan (e.g. https://example.com/article). Either `url` or `domain` is required.",
+            required:    false,
             schema:      { type: "string", maxLength: 2048, example: "https://example.com" },
+          },
+          {
+            name:        "domain",
+            in:          "query",
+            description: "Bare domain to fetch and scan (alternative to `url`; resolved as https://<domain>)",
+            required:    false,
+            schema:      { type: "string", maxLength: 253, example: "example.com" },
           },
         ],
         responses: {

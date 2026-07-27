@@ -267,7 +267,7 @@ app.use(
     {
       "GET /safefetch": {
         accepts: [{ scheme: "exact", price: "$0.01", network: NETWORK, payTo: PAY_TO }],
-        description: "Fetch a URL safely on the agent's behalf and get back sanitized, agent-ready page text PLUS a prompt-injection risk verdict (SAFE / REVIEW / BLOCK). Scans for indirect prompt injection an agent cannot detect itself without first ingesting it: instructions hidden in display:none elements, HTML comments, alt attributes and off-screen text; invisible Unicode-Tag and zero-width smuggling; homoglyph-obfuscated and base64-encoded payloads; ChatML/[INST] delimiter spoofing; markdown-image data exfiltration; and tool-call bait. Returned text has hidden elements and invisible control characters removed, so the model only ever sees what a human would see. Use before feeding ANY fetched web page, document, or tool output into an LLM context.",
+        description: "Fetch a URL safely and get back sanitized, agent-ready page text plus a prompt-injection verdict (SAFE / REVIEW / BLOCK). Detects instructions hidden in markup, invisible Unicode, homoglyph and encoded payloads, delimiter spoofing and data-exfiltration bait — so an agent never ingests hostile content. Use before feeding any fetched page into an LLM.",
         mimeType: "application/json",
         extensions: {
           ...declareDiscoveryExtension({
@@ -280,7 +280,6 @@ app.use(
               example: {
                 url: "https://example.com", verdict: "SAFE", risk: 0,
                 injection: { detected: false, techniques: [] },
-                content: { analyzed: true, chars: 1840, title: "Example Domain" },
               },
             },
           }),

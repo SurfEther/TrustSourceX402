@@ -9,3 +9,4 @@ test-client.mjs
 .tgz*
 *.mcpb
 verify-bazaar.mjs
+content/blog/safefetch-dev-to.md

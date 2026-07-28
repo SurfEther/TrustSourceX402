@@ -126,7 +126,7 @@ Findings are weighted by **where** they appear — a security article discussing
 }
 ```
 
-**Verdicts:** `BLOCK` — a critical technique concealed from human view, or aggregate risk ≥ 0.7. `REVIEW` — weaker signals, low-trust host, or a content type that was not scanned. `SAFE` — no injection patterns found.
+**Verdicts:** `BLOCK` — a critical technique concealed from human view, or aggregate risk ≥ 0.7. `REVIEW` — weaker signals, low-trust host, or a content type that was not scanned. `SAFE` — nothing concealed and aggregate risk below 0.25 (visible-text matches may still be present in `injection.findings`, deliberately weighted low).
 
 ---
 
